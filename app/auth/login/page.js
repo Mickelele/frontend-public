@@ -4,7 +4,7 @@ import { setToken } from '/lib/auth';
 import { useRouter } from 'next/navigation';
 import AuthForm from '/components/AuthForm';
 import { useAuth } from '/context/AuthContext';
-import '../styles/globals.css';
+import '../../../styles/global.css';
 
 export default function LoginPage() {
     const router = useRouter();
