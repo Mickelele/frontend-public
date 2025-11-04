@@ -8,7 +8,7 @@ export default function DashboardPage() {
     const router = useRouter();
 
     useEffect(() => {
-        if (!user) router.push('/login');
+        if (!user) router.push('/auth/login');
     }, [user]);
 
     if (!user) return <p>Ładowanie...</p>;
