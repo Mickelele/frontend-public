@@ -8,6 +8,7 @@ export default function ProfilePage() {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [showUploader, setShowUploader] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -65,6 +66,8 @@ export default function ProfilePage() {
             const data = await res.json();
             alert('Zdjęcie zostało zapisane!');
             console.log('Odpowiedź serwera:', data);
+            setShowUploader(false);
+            setFile(null);
         } catch (err) {
             console.error(err);
             alert('Nie udało się przesłać zdjęcia');
@@ -89,27 +92,51 @@ export default function ProfilePage() {
                 {preview ? (
                     <img
                         src={preview}
-                        alt="Podgląd zdjęcia"
-                        className="w-40 h-40 object-cover rounded-full mb-3 border"
+                        alt="Zdjęcie profilowe"
+                        className="w-40 h-40 object-cover rounded-full mb-3 border shadow-md"
                     />
                 ) : (
-                    <p>Brak zdjęcia profilowego</p>
+                    <div className="w-40 h-40 flex items-center justify-center bg-gray-100 text-gray-400 rounded-full border mb-3">
+                        Brak zdjęcia
+                    </div>
                 )}
 
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="block mt-2"
-                />
+                {!showUploader ? (
+                    <button
+                        onClick={() => setShowUploader(true)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                        Zmień zdjęcie profilowe
+                    </button>
+                ) : (
+                    <div className="flex flex-col gap-2 mt-2">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="block"
+                        />
 
-                <button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
-                >
-                    {uploading ? 'Wysyłanie...' : 'Zapisz zdjęcie'}
-                </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleUpload}
+                                disabled={uploading}
+                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
+                            >
+                                {uploading ? 'Wysyłanie...' : 'Zapisz zdjęcie'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowUploader(false);
+                                    setFile(null);
+                                }}
+                                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                            >
+                                Anuluj
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

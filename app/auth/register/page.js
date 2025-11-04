@@ -9,7 +9,7 @@ export default function RegisterPage() {
     const onSubmit = async (values) => {
         await registerUser(values);
         alert('Konto utworzone! Zaloguj się.');
-        router.push('/login');
+        router.push('/dashboard/profile');
     };
 
     const fields = [
