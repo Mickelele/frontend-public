@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getToken } from '/lib/auth';
+const USER_API_URL = process.env.NEXT_PUBLIC_USER_API_URL;
+
 
 export default function ProfilePage() {
     const [user, setUser] = useState(null);
@@ -20,7 +22,7 @@ export default function ProfilePage() {
 
         const fetchUser = async () => {
             try {
-                const res = await fetch('https://user-service-hg4z.onrender.com/user/me', {
+                const res = await fetch(`${USER_API_URL}/user/me`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!res.ok) throw new Error('Błąd pobierania danych');
@@ -56,7 +58,7 @@ export default function ProfilePage() {
         formData.append('file', file);
 
         try {
-            const res = await fetch('https://user-service-hg4z.onrender.com/user/uploadImage', {
+            const res = await fetch(`${USER_API_URL}/user/uploadImage`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
