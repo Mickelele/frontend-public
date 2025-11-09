@@ -6,7 +6,7 @@ export default function CourseList() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [visibleGroups, setVisibleGroups] = useState({}); // przechowuje które kursy pokazują grupy
+    const [visibleGroups, setVisibleGroups] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
