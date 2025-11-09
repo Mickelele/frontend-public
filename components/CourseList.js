@@ -36,6 +36,11 @@ export default function CourseList() {
         }));
     };
 
+    const handleEnroll = (kursId) => {
+        // TODO: zamień na prawdziwe wywołanie API
+        alert(`Zapisano na kurs o ID ${kursId}`);
+    };
+
     if (loading) return <p className="text-center mt-10 text-gray-500">Ładowanie kursów...</p>;
     if (error) return <p className="text-center mt-10 text-red-500">Błąd: {error}</p>;
 
@@ -63,7 +68,7 @@ export default function CourseList() {
                     {visibleGroups[kurs.id_kursu] && (
                         <>
                             {kurs.grupy && kurs.grupy.length > 0 ? (
-                                <ul className="space-y-2">
+                                <ul className="space-y-2 mb-3">
                                     {kurs.grupy.map((grupa) => (
                                         <li
                                             key={grupa.id_grupa}
@@ -79,10 +84,17 @@ export default function CourseList() {
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-gray-500">Brak grup dla tego kursu</p>
+                                <p className="text-gray-500 mb-3">Brak grup dla tego kursu</p>
                             )}
                         </>
                     )}
+
+                    <button
+                        onClick={() => handleEnroll(kurs.id_kursu)}
+                        className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition"
+                    >
+                        Zapisz na kurs
+                    </button>
                 </div>
             ))}
         </div>

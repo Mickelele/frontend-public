@@ -1,10 +1,10 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import { loginUser } from '/lib/api/auth.api';
 import { setToken } from '/lib/auth';
-import { useRouter } from 'next/navigation';
 import AuthForm from '/components/AuthForm';
 import { useAuth } from '/context/AuthContext';
-import '../../../styles/global.css';
+import Link from 'next/link';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -23,9 +23,18 @@ export default function LoginPage() {
     ];
 
     return (
-        <div>
-            <h1 className="text-2xl mb-4">Logowanie</h1>
-            <AuthForm fields={fields} onSubmit={onSubmit} submitLabel="Zaloguj się" />
-        </div>
+        <AuthForm
+            fields={fields}
+            onSubmit={onSubmit}
+            submitLabel="Zaloguj się"
+            footer={
+                <p className="text-gray-600">
+                    Nie masz konta?{' '}
+                    <Link href="/auth/register" className="text-blue-600 hover:underline font-medium">
+                        Zarejestruj się
+                    </Link>
+                </p>
+            }
+        />
     );
 }

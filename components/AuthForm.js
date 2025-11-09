@@ -1,10 +1,20 @@
 'use client';
-import { useState } from 'react';
 
-export default function AuthForm({ fields, onSubmit, submitLabel }) {
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+
+export default function AuthForm({ fields, onSubmit, submitLabel, footer }) {
     const [values, setValues] = useState({});
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const firstInputRef = useRef(null);
+
+    // Autofocus na pierwsze pole
+    useEffect(() => {
+        if (firstInputRef.current) {
+            firstInputRef.current.focus();
+        }
+    }, []);
 
     const handleChange = (e) => {
         setValues({ ...values, [e.target.name]: e.target.value });
@@ -37,70 +47,64 @@ export default function AuthForm({ fields, onSubmit, submitLabel }) {
                     </p>
                 </div>
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="card animate-slide-up"
-                >
-                    <div className="space-y-6">
-                        {fields.map((field) => (
-                            <div key={field.name} className="space-y-2">
-                                <label
-                                    htmlFor={field.name}
-                                    className="block text-sm font-medium text-gray-700"
-                                >
-                                    {field.label}
-                                </label>
-                                <input
-                                    id={field.name}
-                                    type={field.type || 'text'}
-                                    name={field.name}
-                                    onChange={handleChange}
-                                    required
-                                    className="input-field"
-                                    placeholder={`Wprowadź ${field.label.toLowerCase()}`}
-                                    disabled={isLoading}
-                                />
-                            </div>
-                        ))}
+                <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
+                    {fields.map((field, index) => (
+                        <div key={field.name} className="space-y-1">
+                            <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">
+                                {field.label}
+                            </label>
+                            <input
+                                id={field.name}
+                                name={field.name}
+                                type={field.type || 'text'}
+                                placeholder={`Wprowadź ${field.label.toLowerCase()}`}
+                                value={values[field.name] || ''}
+                                onChange={handleChange}
+                                disabled={isLoading}
+                                ref={index === 0 ? firstInputRef : null}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                required
+                            />
+                        </div>
+                    ))}
 
-                        {error && (
-                            <div className="rounded-md bg-red-50 p-4 border border-red-200">
-                                <div className="flex">
-                                    <div className="flex-shrink-0">
-                                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-red-800">
-                                            Błąd
-                                        </h3>
-                                        <p className="text-sm text-red-700 mt-1">
-                                            {error}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                    {error && (
+                        <div className="rounded-md bg-red-50 p-4 border border-red-200">
+                            <p className="text-sm text-red-700">{error}</p>
+                        </div>
+                    )}
 
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="btn-primary w-full flex justify-center items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span>Przetwarzanie...</span>
-                                </>
-                            ) : (
-                                <span>{submitLabel}</span>
-                            )}
-                        </button>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full py-2 px-4 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                    >
+                        {isLoading ? (
+                            <svg
+                                className="animate-spin h-5 w-5 text-white mr-2"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                ></circle>
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                        ) : null}
+                        {isLoading ? 'Przetwarzanie...' : submitLabel}
+                    </button>
+
+                    {footer && <div className="mt-4 text-center">{footer}</div>}
                 </form>
             </div>
         </div>
