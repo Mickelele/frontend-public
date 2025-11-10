@@ -102,7 +102,6 @@ export default function CourseList() {
                                                 {grupa.liczba_uczniow}
                                             </p>
 
-                                            {/* Formularz zapisu ucznia */}
                                             <div className="space-y-2">
                                                 <input
                                                     type="text"
