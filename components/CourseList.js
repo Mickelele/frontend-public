@@ -1,14 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getCourses, getCourseGroups } from '../lib/api/course.api';
-import { enrollStudentToGroup } from '../lib/api/student.api';
+import { getToken } from '../lib/auth';
 
-export default function CourseList() {
+export default function CourseListPage() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [visibleGroups, setVisibleGroups] = useState({});
-    const [studentForm, setStudentForm] = useState({});
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -38,28 +39,16 @@ export default function CourseList() {
         }));
     };
 
-    const handleFormChange = (groupId, e) => {
-        setStudentForm((prev) => ({
-            ...prev,
-            [groupId]: {
-                ...prev[groupId],
-                [e.target.name]: e.target.value
-            }
-        }));
-    };
+    const goToGroupPage = (courseId, groupId) => {
+        const token = getToken();
 
-    const handleEnroll = async (groupId) => {
-        const formData = studentForm[groupId];
-        if (!formData) return alert('Wypełnij formularz!');
-
-        try {
-            await enrollStudentToGroup({ ...formData, id_grupa: groupId });
-            alert('Uczestnik zapisany na grupę!');
-            setStudentForm((prev) => ({ ...prev, [groupId]: {} }));
-        } catch (err) {
-            console.error(err);
-            alert('Błąd podczas zapisu!');
+        if (!token) {
+            alert('Zaloguj się lub utwórz konto, aby zapisać ucznia na kurs!');
+            router.push('/auth/login');
+            return;
         }
+
+        router.push(`/courses/${courseId}/groups/${groupId}`);
     };
 
     if (loading) return <p className="text-center mt-10 text-gray-500">Ładowanie kursów...</p>;
@@ -68,96 +57,49 @@ export default function CourseList() {
     return (
         <div className="grid md:grid-cols-2 gap-6">
             {courses.length === 0 && <p className="text-center text-gray-500">Brak kursów do wyświetlenia</p>}
+
             {courses.map((kurs) => (
                 <div
                     key={kurs.id_kursu}
                     className="bg-white shadow-md rounded-lg p-5 border border-gray-200 hover:shadow-lg transition-shadow"
                 >
-                    <h2 className="text-xl font-semibold mb-2">{kurs.nazwa_kursu}</h2>
-                    <p className="text-gray-600 mb-4">
-                        <span className="font-medium">Data rozpoczęcia:</span> {kurs.data_rozpoczecia} |{' '}
-                        <span className="font-medium">Data zakończenia:</span> {kurs.data_zakonczenia}
-                    </p>
-
-                    <button
+                    <div
                         onClick={() => toggleGroups(kurs.id_kursu)}
-                        className="mb-3 text-sm text-blue-600 hover:underline"
+                        className="cursor-pointer"
                     >
-                        {visibleGroups[kurs.id_kursu] ? 'Ukryj grupy' : 'Pokaż grupy'}
-                    </button>
+                        <h2 className="text-xl font-semibold mb-2">{kurs.nazwa_kursu}</h2>
+                        <p className="text-gray-600 mb-2">
+                            <span className="font-medium">Data rozpoczęcia:</span> {kurs.data_rozpoczecia} |{' '}
+                            <span className="font-medium">Data zakończenia:</span> {kurs.data_zakonczenia}
+                        </p>
+                        <p className="text-sm text-blue-600 hover:underline">
+                            {visibleGroups[kurs.id_kursu] ? 'Ukryj grupy' : 'Pokaż grupy'}
+                        </p>
+                    </div>
 
                     {visibleGroups[kurs.id_kursu] && (
-                        <>
+                        <div className="mt-3 space-y-3">
                             {kurs.grupy && kurs.grupy.length > 0 ? (
-                                <ul className="space-y-4 mb-3">
-                                    {kurs.grupy.map((grupa) => (
-                                        <li
-                                            key={grupa.id_grupa}
-                                            className="bg-gray-50 p-3 rounded border border-gray-200"
-                                        >
-                                            <p className="mb-2">
-                                                <span className="font-semibold">Grupa {grupa.id_grupa}</span> - Nauczyciel:{' '}
-                                                {grupa.nauczyciel.uzytkownik.imie}{' '}
-                                                {grupa.nauczyciel.uzytkownik.nazwisko} - Liczba uczniów:{' '}
-                                                {grupa.liczba_uczniow}
-                                            </p>
-
-                                            <div className="space-y-2">
-                                                <input
-                                                    type="text"
-                                                    name="imie"
-                                                    placeholder="Imię"
-                                                    value={studentForm[grupa.id_grupa]?.imie || ''}
-                                                    onChange={(e) => handleFormChange(grupa.id_grupa, e)}
-                                                    className="w-full border border-gray-300 rounded px-2 py-1"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    name="nazwisko"
-                                                    placeholder="Nazwisko"
-                                                    value={studentForm[grupa.id_grupa]?.nazwisko || ''}
-                                                    onChange={(e) => handleFormChange(grupa.id_grupa, e)}
-                                                    className="w-full border border-gray-300 rounded px-2 py-1"
-                                                />
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    placeholder="Email"
-                                                    value={studentForm[grupa.id_grupa]?.email || ''}
-                                                    onChange={(e) => handleFormChange(grupa.id_grupa, e)}
-                                                    className="w-full border border-gray-300 rounded px-2 py-1"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    name="pseudonim"
-                                                    placeholder="Pseudonim"
-                                                    value={studentForm[grupa.id_grupa]?.pseudonim || ''}
-                                                    onChange={(e) => handleFormChange(grupa.id_grupa, e)}
-                                                    className="w-full border border-gray-300 rounded px-2 py-1"
-                                                />
-                                                <input
-                                                    type="password"
-                                                    name="haslo"
-                                                    placeholder="Hasło"
-                                                    value={studentForm[grupa.id_grupa]?.haslo || ''}
-                                                    onChange={(e) => handleFormChange(grupa.id_grupa, e)}
-                                                    className="w-full border border-gray-300 rounded px-2 py-1"
-                                                />
-
-                                                <button
-                                                    onClick={() => handleEnroll(grupa.id_grupa)}
-                                                    className="mt-2 w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition"
-                                                >
-                                                    Zapisz ucznia na grupę
-                                                </button>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
+                                kurs.grupy.map((grupa) => (
+                                    <div
+                                        key={grupa.id_grupa}
+                                        onClick={() => goToGroupPage(kurs.id_kursu, grupa.id_grupa)}
+                                        className="p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-blue-50 cursor-pointer transition"
+                                    >
+                                        <p className="font-semibold">Grupa {grupa.id_grupa}</p>
+                                        <p className="text-sm text-gray-600">
+                                            Nauczyciel: {grupa.nauczyciel.uzytkownik.imie}{' '}
+                                            {grupa.nauczyciel.uzytkownik.nazwisko}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                            Liczba uczniów: {grupa.liczba_uczniow}
+                                        </p>
+                                    </div>
+                                ))
                             ) : (
-                                <p className="text-gray-500 mb-3">Brak grup dla tego kursu</p>
+                                <p className="text-gray-500">Brak grup dla tego kursu</p>
                             )}
-                        </>
+                        </div>
                     )}
                 </div>
             ))}
