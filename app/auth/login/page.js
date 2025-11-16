@@ -5,6 +5,7 @@ import { setToken } from '/lib/auth';
 import AuthForm from '/components/AuthForm';
 import { useAuth } from '/context/AuthContext';
 import Link from 'next/link';
+import Cookies from "js-cookie";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -14,7 +15,7 @@ export default function LoginPage() {
         const res = await loginUser(values);
         setToken(res.token);
         setUser(res.user);
-        router.push('/dashboard/profile');
+        router.push('/dashboard');
     };
 
     const fields = [
