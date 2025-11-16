@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import '../styles/global.css';
 import Navbar from '/components/Navbar';
-import Sidebar from '/components/Sidebar';
+import Sidebar from '/components/SideBar';
 import { AuthProvider } from '/context/AuthContext';
 
 export default function RootLayout({ children }) {
