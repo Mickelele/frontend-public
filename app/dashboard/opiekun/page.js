@@ -42,13 +42,11 @@ export default function GuardianDashboard() {
         }
     }, []);
 
-    // Pobierz 4 najnowsze obecności
     const allPresence = Object.values(presence).flat();
     const latestPresence = allPresence
         .sort((a, b) => new Date(b.zajecia?.data || 0) - new Date(a.zajecia?.data || 0))
-        .slice(0, 4); // Tylko 4 najnowsze
+        .slice(0, 4);
 
-    // Znajdź studentów dla obecności
     const getStudentForPresence = (presenceItem) => {
         return students.find(student => student.id_ucznia === presenceItem.id_ucznia);
     };
@@ -65,9 +63,7 @@ export default function GuardianDashboard() {
                     </p>
                 </header>
 
-                {/* Kafelki z szybkimi akcjami */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    {/* Statystyki uczniów */}
                     <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <h3 className="text-lg font-semibold text-gray-800 mb-2">
                             👥 Uczniowie
@@ -80,14 +76,12 @@ export default function GuardianDashboard() {
                         </p>
                     </div>
 
-                    {/* Obecności - TYLKO LISTA OSTATNICH WPISÓW */}
-                    <Link href="/dashboard/students_presence" className="block">
+                    <Link href="/dashboard/opiekun/students_presence" className="block">
                         <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-500 h-full">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">
                                 📋 Ostatnie obecności
                             </h3>
 
-                            {/* Lista ostatnich obecności */}
                             <div className="space-y-3">
                                 {latestPresence.length > 0 ? (
                                     latestPresence.map((presenceItem) => {
@@ -143,7 +137,7 @@ export default function GuardianDashboard() {
                         </div>
                     </Link>
 
-                    {/* Oceny */}
+
                     <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <h3 className="text-lg font-semibold text-gray-800 mb-2">
                             ⭐ Oceny
@@ -154,7 +148,7 @@ export default function GuardianDashboard() {
                     </div>
                 </div>
 
-                {/* Reszta dashboardu pozostaje bez zmian */}
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">

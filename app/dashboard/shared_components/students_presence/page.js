@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getOpiekunStudents } from "../../../lib/api/guardian.api";
-import { getPresenceForStudent } from "../../../lib/api/presence.api";
-import { getUserIdFromToken } from "../../../lib/auth";
+import { getOpiekunStudents } from "../../../../lib/api/guardian.api";
+import { getPresenceForStudent } from "../../../../lib/api/presence.api";
+import { getUserIdFromToken } from "../../../../lib/auth";
 import PresenceCard from "/components/PresenceCard";
 // lub: import SimplePresenceCard from "/components/SimplePresenceCard";
 

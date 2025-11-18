@@ -13,31 +13,31 @@ export default function Sidebar({ isOpen, onClose }) {
 
     const menuItems = [
         {
-            href: '/dashboard',
+            href: '/dashboard/opiekun',
             label: 'Dashboard',
             icon: '📊',
             description: 'Panel główny'
         },
         {
-            href: '/dashboard/profile',
+            href: '/dashboard/shared_components/profile',
             label: 'Profil',
             icon: '👤',
             description: 'Twój profil'
         },
         {
-            href: '/dashboard/students_presence',
+            href: '/dashboard/shared_components/students_presence',
             label: 'Obecności uczniów',
             icon: '📋',
             description: 'Śledzenie obecności'
         },
         {
-            href: '/dashboard/grades',
+            href: '/dashboard/shared_components/grades',
             label: 'Oceny',
             icon: '⭐',
             description: 'Oceny uczniów'
         },
         {
-            href: '/dashboard/messages',
+            href: '/dashboard/shared_components/messages',
             label: 'Wiadomości',
             icon: '💬',
             description: 'Komunikacja'
@@ -50,7 +50,6 @@ export default function Sidebar({ isOpen, onClose }) {
         }
     ];
 
-    // Zamknij sidebar po kliknięciu na overlay
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
             onClose();
@@ -59,7 +58,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
     return (
         <>
-            {/* Overlay */}
+
             {isOpen && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -67,14 +66,14 @@ export default function Sidebar({ isOpen, onClose }) {
                 />
             )}
 
-            {/* Sidebar po LEWEJ stronie */}
+
             <div className={`
                 fixed top-0 left-0 h-screen w-64 bg-white shadow-lg z-50
                 transform transition-transform duration-300 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
             `}>
                 <div className="p-6 h-full overflow-y-auto">
-                    {/* Nagłówek z przyciskiem zamknięcia */}
+
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <h2 className="text-xl font-bold text-gray-800">Menu</h2>
@@ -91,7 +90,6 @@ export default function Sidebar({ isOpen, onClose }) {
                         </button>
                     </div>
 
-                    {/* Lista linków */}
                     <nav className="space-y-2">
                         {menuItems.map((item) => {
                             const isActive = pathname === item.href;
@@ -121,7 +119,7 @@ export default function Sidebar({ isOpen, onClose }) {
                         })}
                     </nav>
 
-                    {/* Stopka sidebaru */}
+
                     <div className="mt-8 pt-6 border-t border-gray-200">
                         <div className="text-xs text-gray-500">
                             Zalogowany jako:<br />

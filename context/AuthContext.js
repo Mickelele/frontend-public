@@ -6,11 +6,13 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         (async () => {
             const u = await getCurrentUser();
             setUser(u);
+            setLoading(false);
         })();
     }, []);
 
@@ -20,7 +22,12 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, setUser, logout: handleLogout }}>
+        <AuthContext.Provider value={{
+            user,
+            setUser,
+            logout: handleLogout,
+            loading
+        }}>
             {children}
         </AuthContext.Provider>
     );
