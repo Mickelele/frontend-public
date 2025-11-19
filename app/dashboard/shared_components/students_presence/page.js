@@ -5,7 +5,6 @@ import { getOpiekunStudents } from "../../../../lib/api/guardian.api";
 import { getPresenceForStudent } from "../../../../lib/api/presence.api";
 import { getUserIdFromToken } from "../../../../lib/auth";
 import PresenceCard from "/components/PresenceCard";
-// lub: import SimplePresenceCard from "/components/SimplePresenceCard";
 
 export default function StudentsPresencePage() {
     const [students, setStudents] = useState([]);
@@ -83,7 +82,7 @@ export default function StudentsPresencePage() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-6xl mx-auto">
-                {/* Nagłówek strony */}
+
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-800">
                         Obecności uczniów
@@ -93,7 +92,7 @@ export default function StudentsPresencePage() {
                     </p>
                 </header>
 
-                {/* Statystyki */}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div className="bg-white p-4 rounded-lg shadow text-center">
                         <div className="text-2xl font-bold text-blue-600">{students.length}</div>
@@ -113,7 +112,7 @@ export default function StudentsPresencePage() {
                     </div>
                 </div>
 
-                {/* Lista uczniów z obecnościami */}
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {students.map((student) => (
                         <PresenceCard
