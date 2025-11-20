@@ -15,7 +15,9 @@ export default function TeacherCoursesPage() {
         visible: false,
         x: 0,
         y: 0,
-        idObecnosci: null
+        idObecnosci: null,
+        idZajec: null,
+        idStudenta: null
     });
 
     const dniTygodnia = [
@@ -28,9 +30,7 @@ export default function TeacherCoursesPage() {
         "Niedziela"
     ];
 
-    // ---------------------------------------------------
-    // ŁADOWANIE KURSÓW
-    // ---------------------------------------------------
+
     useEffect(() => {
         const teacherId = getUserIdFromToken();
         if (!teacherId) {
@@ -54,9 +54,6 @@ export default function TeacherCoursesPage() {
         }
     }
 
-    // ---------------------------------------------------
-    // FUNKCJE POMOCNICZE
-    // ---------------------------------------------------
     const toggleGroup = (groupId) => {
         setExpandedGroups(prev => {
             const newSet = new Set(prev);
@@ -89,9 +86,7 @@ export default function TeacherCoursesPage() {
     const getPresenceTextColor = s =>
         s === null ? "text-gray-600" : s ? "text-green-600" : "text-red-600";
 
-    // ---------------------------------------------------
-    // OBSŁUGA MENU OBECNOŚCI
-    // ---------------------------------------------------
+
     const openPresenceMenu = (e, obecnosc, zajecieId, studentId) => {
         const rect = e.target.getBoundingClientRect();
         setPresenceMenu({
@@ -100,78 +95,115 @@ export default function TeacherCoursesPage() {
             y: rect.top + rect.height,
             idObecnosci: obecnosc?.id_obecnosci || null,
             idZajec: zajecieId,
-            idStudenta: studentId,
-            currentObecnosc: obecnosc // Zapisz aktualną obecność
+            idStudenta: studentId
         });
     };
 
+
+    const updatePresenceOptimistically = (zajecieId, studentId, value) => {
+        setCourses(prevCourses =>
+            prevCourses.map(course => ({
+                ...course,
+                grupy: course.grupy.map(grupa => ({
+                    ...grupa,
+                    zajecia: grupa.zajecia.map(zajecie => {
+                        if (zajecie.id_zajec === zajecieId) {
+                            const existingObecnosc = zajecie.obecnosci?.find(o => o.id_ucznia === studentId);
+
+                            if (value === null) {
+
+                                const updatedObecnosci = zajecie.obecnosci?.filter(o => o.id_ucznia !== studentId) || [];
+                                return {
+                                    ...zajecie,
+                                    obecnosci: updatedObecnosci
+                                };
+                            } else {
+
+                                const newObecnosc = {
+                                    id_obecnosci: existingObecnosc?.id_obecnosci || `temp-${Date.now()}`,
+                                    id_ucznia: studentId,
+                                    id_zajec: zajecieId,
+                                    czyObecny: value ? 1 : 0
+                                };
+
+                                const updatedObecnosci = existingObecnosc
+                                    ? zajecie.obecnosci?.map(o =>
+                                    o.id_ucznia === studentId ? newObecnosc : o
+                                ) || []
+                                    : [...(zajecie.obecnosci || []), newObecnosc];
+
+                                return {
+                                    ...zajecie,
+                                    obecnosci: updatedObecnosci
+                                };
+                            }
+                        }
+                        return zajecie;
+                    })
+                }))
+            }))
+        );
+    };
 
     const choosePresence = async (value) => {
         if (updating) return;
 
         try {
             setUpdating(true);
+            const { idObecnosci, idZajec, idStudenta } = presenceMenu;
 
-            // ZAPISZ DANE DO LOKALNYCH ZMIENNYCH PRZED RESETEM
-            const currentMenuData = { ...presenceMenu };
 
-            console.log("Dane z menu:", currentMenuData);
-            console.log("Wybrana wartość:", value);
-            console.log("Typ wartości:", typeof value);
+            if (!idZajec || !idStudenta) {
+                console.error("Brak wymaganych danych:", presenceMenu);
+                return;
+            }
 
-            // NATYCHMIAST ZAMKNIJ MENU
+
+            updatePresenceOptimistically(idZajec, idStudenta, value);
+
+
             setPresenceMenu({
                 visible: false,
                 x: 0,
                 y: 0,
                 idObecnosci: null,
                 idZajec: null,
-                idStudenta: null,
-                currentObecnosc: null
+                idStudenta: null
             });
 
-            // WALIDACJA DANYCH
-            if (!currentMenuData.idZajec || !currentMenuData.idStudenta) {
-                console.error("Brak wymaganych danych:", currentMenuData);
-                alert("Błąd: Brak wymaganych danych");
-                return;
+            let apiCall;
+            if (!idObecnosci && value !== null) {
+                apiCall = createPresence(idZajec, idStudenta, value);
+            } else if (idObecnosci && value !== null) {
+                apiCall = setPresence(idObecnosci, value);
+            } else if (idObecnosci && value === null) {
+                apiCall = deletePresence(idObecnosci);
             }
 
-            // WYKONAJ OPERACJĘ
-            let result;
-            if (!currentMenuData.idObecnosci && value !== null) {
-                console.log("CREATE - idZajec:", currentMenuData.idZajec, "idStudenta:", currentMenuData.idStudenta, "value:", value);
-                result = await createPresence(currentMenuData.idZajec, currentMenuData.idStudenta, value);
-                console.log("Odpowiedź CREATE:", result);
-            } else if (currentMenuData.idObecnosci && value !== null) {
-                console.log("UPDATE - idObecnosci:", currentMenuData.idObecnosci, "value:", value);
-                result = await setPresence(currentMenuData.idObecnosci, value);
-                console.log("Odpowiedź UPDATE:", result);
-            } else if (currentMenuData.idObecnosci && value === null) {
-                console.log("DELETE - idObecnosci:", currentMenuData.idObecnosci);
-                result = await deletePresence(currentMenuData.idObecnosci);
-                console.log("Odpowiedź DELETE:", result);
+
+            if (apiCall) {
+                apiCall
+                    .then(result => {
+                        console.log("Operacja API zakończona sukcesem:", result);
+
+                    })
+                    .catch(error => {
+                        console.error("Błąd API, przywracanie stanu:", error);
+
+                        loadCourses(selectedDay);
+                    });
             }
-
-            // KRÓTKIE OPÓŹNIENIE PRZED PRZEŁADOWANIEM
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // PRZEŁADUJ DANE
-            await loadCourses(selectedDay);
 
         } catch (err) {
             console.error("Błąd przy zapisie obecności:", err);
-            alert("Wystąpił błąd podczas zapisywania obecności");
+
+            loadCourses(selectedDay);
         } finally {
             setUpdating(false);
         }
     };
 
 
-
-    // ---------------------------------------------------
-    // RENDER
-    // ---------------------------------------------------
 
     if (loading) {
         return (
@@ -188,13 +220,12 @@ export default function TeacherCoursesPage() {
         <div className="min-h-screen bg-gray-50 p-6 relative">
             <div className="max-w-full mx-auto">
 
-                {/* ------------------ Nagłówki ------------------ */}
+
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-800">Moje kursy i grupy</h1>
                     <p className="text-gray-600 mt-2">Przeglądaj swoje kursy, grupy i obecności</p>
                 </header>
 
-                {/* ------------------ Filtr ------------------ */}
                 <div className="mb-8">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Filtruj po dniu tygodnia:
@@ -202,9 +233,10 @@ export default function TeacherCoursesPage() {
                     <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => setSelectedDay("")}
-                            className={`px-4 py-2 rounded-lg ${
-                                selectedDay === "" ? "bg-blue-500 text-white" :
-                                    "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                                selectedDay === ""
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                             }`}
                         >
                             Wszystkie dni
@@ -214,9 +246,10 @@ export default function TeacherCoursesPage() {
                             <button
                                 key={dzien}
                                 onClick={() => setSelectedDay(dzien)}
-                                className={`px-4 py-2 rounded-lg ${
-                                    selectedDay === dzien ? "bg-blue-500 text-white" :
-                                        "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                                className={`px-4 py-2 rounded-lg transition-colors ${
+                                    selectedDay === dzien
+                                        ? "bg-blue-500 text-white"
+                                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                                 }`}
                             >
                                 {dzien}
@@ -225,7 +258,7 @@ export default function TeacherCoursesPage() {
                     </div>
                 </div>
 
-                {/* ------------------ Statystyki ------------------ */}
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     <StatCard title="Liczba kursów" value={courses.length} color="text-blue-600" />
                     <StatCard
@@ -245,7 +278,13 @@ export default function TeacherCoursesPage() {
                     />
                 </div>
 
-                {/* ------------------ Brak kursów ------------------ */}
+                {updating && (
+                    <div className="fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse">
+                        Zapisuję zmiany...
+                    </div>
+                )}
+
+
                 {courses.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-lg shadow">
                         <h2 className="text-xl font-semibold text-gray-800 mb-2">
@@ -262,12 +301,10 @@ export default function TeacherCoursesPage() {
                 ) : (
                     <div className="space-y-6">
 
-                        {/* ------------------ Kursy ------------------ */}
                         {courses.map(course => (
                             <div key={course.id_kursu} className="bg-white rounded-lg shadow overflow-hidden">
 
-                                {/* Nagłówek kursu */}
-                                <div className="bg-blue-50 px-6 py-4 border-b flex justify-between">
+                                <div className="bg-blue-50 px-6 py-4 border-b flex justify-between items-center">
                                     <div>
                                         <h2 className="text-xl font-bold text-gray-800">
                                             {course.nazwa_kursu}
@@ -276,12 +313,12 @@ export default function TeacherCoursesPage() {
                                             {formatDate(course.data_rozpoczecia)} - {formatDate(course.data_zakonczenia)}
                                         </p>
                                     </div>
-                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                                        {course.grupy.length} grup
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                        {course.grupy.length} {course.grupy.length === 1 ? 'grupa' : 'grup'}
                                     </span>
                                 </div>
 
-                                {/* Grupy */}
+
                                 <div className="p-6 space-y-6">
                                     {course.grupy.map(grupa => (
                                         <GroupSection
@@ -300,14 +337,12 @@ export default function TeacherCoursesPage() {
                                         />
                                     ))}
                                 </div>
-
                             </div>
                         ))}
-
                     </div>
                 )}
 
-                {/* ------------------ MENU OBECNOŚCI ------------------ */}
+
                 {presenceMenu.visible && (
                     <div
                         style={{
@@ -316,24 +351,34 @@ export default function TeacherCoursesPage() {
                             left: presenceMenu.x,
                             transform: "translate(-50%, 10px)"
                         }}
-                        className="bg-white shadow-lg border border-gray-300 rounded-lg p-2 z-50"
+                        className="bg-white shadow-lg border border-gray-300 rounded-lg p-2 z-50 min-w-[140px]"
                     >
-                        <button onClick={() => choosePresence(true)}
-                                className="block w-full px-3 py-2 hover:bg-green-100 text-green-700">
+                        <button
+                            onClick={() => choosePresence(true)}
+                            className="block w-full px-3 py-2 hover:bg-green-50 text-green-700 rounded text-left transition-colors"
+                        >
                             ✓ Obecny
                         </button>
-                        <button onClick={() => choosePresence(false)}
-                                className="block w-full px-3 py-2 hover:bg-red-100 text-red-700">
+                        <button
+                            onClick={() => choosePresence(false)}
+                            className="block w-full px-3 py-2 hover:bg-red-50 text-red-700 rounded text-left transition-colors"
+                        >
                             ✗ Nieobecny
                         </button>
-                        <button onClick={() => choosePresence(null)}
-                                className="block w-full px-3 py-2 hover:bg-gray-100 text-gray-700">
+                        <button
+                            onClick={() => choosePresence(null)}
+                            className="block w-full px-3 py-2 hover:bg-gray-50 text-gray-700 rounded text-left transition-colors"
+                        >
                             ? Nieustalone
                         </button>
-                        <button onClick={() => setPresenceMenu(p => ({ ...p, visible: false }))}
-                                className="block w-full px-3 py-2 text-gray-500 hover:bg-gray-200">
-                            Zamknij
-                        </button>
+                        <div className="border-t border-gray-200 mt-1 pt-1">
+                            <button
+                                onClick={() => setPresenceMenu(p => ({ ...p, visible: false }))}
+                                className="block w-full px-3 py-2 text-gray-500 hover:bg-gray-100 rounded text-left transition-colors"
+                            >
+                                Zamknij
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -341,15 +386,12 @@ export default function TeacherCoursesPage() {
     );
 }
 
-/* ======================================================================== */
-/* ======================== KOMPONENTY POMOCNICZE ========================== */
-/* ======================================================================== */
 
 function StatCard({ title, value, color }) {
     return (
-        <div className="bg-white p-4 rounded-lg shadow text-center">
+        <div className="bg-white p-4 rounded-lg shadow text-center border border-gray-100">
             <div className={`text-2xl font-bold ${color}`}>{value}</div>
-            <div className="text-gray-600">{title}</div>
+            <div className="text-gray-600 text-sm mt-1">{title}</div>
         </div>
     );
 }
@@ -368,21 +410,20 @@ function GroupSection({
                           openPresenceMenu
                       }) {
     return (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-            {/* Nagłówek grupy */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+
             <div
-                className="bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 flex justify-between"
+                className="bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 flex justify-between items-center transition-colors"
                 onClick={toggleGroup}
             >
                 <div className="flex items-center gap-3">
                     <svg
-                        className={`w-4 h-4 transition-transform ${expanded ? "rotate-90" : ""}`}
+                        className={`w-4 h-4 transition-transform text-gray-500 ${expanded ? "rotate-90" : ""}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                     >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d="M9 5l7 7-7 7"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
                     </svg>
                     <div>
                         <h3 className="font-semibold text-gray-800">Grupa #{grupa.id_grupa}</h3>
@@ -393,8 +434,8 @@ function GroupSection({
                         </p>
                     </div>
                 </div>
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                    {grupa.zajecia?.length || 0} zajęć
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                    {grupa.zajecia?.length || 0} {grupa.zajecia?.length === 1 ? 'zajęcie' : 'zajęć'}
                 </span>
             </div>
 
@@ -435,24 +476,23 @@ function AttendanceMatrix({
                               openPresenceMenu
                           }) {
     return (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
             <div className="overflow-x-auto">
                 <table className="min-w-full">
                     <thead>
                     <tr className="bg-gray-50">
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 sticky left-0 bg-gray-50 border-r min-w-[200px]">
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 sticky left-0 bg-gray-50 border-r min-w-[200px] z-10">
                             Uczeń
                         </th>
 
                         {grupa.zajecia.map((zajecie, index) => (
-                            <th key={zajecie.id_zajec}
-                                className="px-3 py-2 text-center border-b min-w-[120px]">
+                            <th key={zajecie.id_zajec} className="px-3 py-2 text-center border-b min-w-[120px]">
                                 <div className="flex flex-col items-center">
-                                    <span className="font-semibold">{index + 1}.</span>
+                                    <span className="font-semibold text-sm">{index + 1}.</span>
                                     <span className="text-xs text-gray-500 mt-1">
                                         {formatDate(zajecie.data)}
                                     </span>
-                                    <span className="text-xs text-gray-400 mt-1 truncate max-w-[100px]">
+                                    <span className="text-xs text-gray-400 mt-1 truncate max-w-[100px]" title={getNazwaZajec(zajecie)}>
                                         {getNazwaZajec(zajecie)}
                                     </span>
                                 </div>
@@ -463,19 +503,17 @@ function AttendanceMatrix({
 
                     <tbody>
                     {grupa.uczniowie.map((student, rowIndex) => (
-                        <tr key={student.id_ucznia}
-                            className={rowIndex % 2 ? "bg-gray-50" : "bg-white"}>
+                        <tr key={student.id_ucznia} className={rowIndex % 2 ? "bg-gray-50" : "bg-white"}>
 
-                            {/* Lewa kolumna: student */}
-                            <td className="px-4 py-3 sticky left-0 bg-inherit border-r">
+                            <td className="px-4 py-3 sticky left-0 bg-inherit border-r z-5">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <span className="text-blue-600 text-xs font-medium">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span className="text-blue-600 text-sm font-medium">
                                             {student.pseudonim.charAt(0).toUpperCase()}
                                         </span>
                                     </div>
-                                    <div className="min-w-0">
-                                        <div className="font-medium truncate">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-medium truncate text-gray-900">
                                             {student.pseudonim}
                                         </div>
                                         <div className="text-xs text-gray-500">
@@ -485,33 +523,22 @@ function AttendanceMatrix({
                                 </div>
                             </td>
 
-                            {/* Komórki obecności */}
+
                             {grupa.zajecia.map(zajecie => {
                                 const status = getStudentPresence(zajecie, student.id_ucznia);
-                                const obecnosc = zajecie.obecnosci?.find(
-                                    o => o.id_ucznia === student.id_ucznia
-                                );
+                                const obecnosc = zajecie.obecnosci?.find(o => o.id_ucznia === student.id_ucznia);
 
                                 return (
-                                    <td key={`${student.id_ucznia}-${zajecie.id_zajec}`}
-                                        className="px-2 py-2 text-center border-b">
-
+                                    <td key={`${student.id_ucznia}-${zajecie.id_zajec}`} className="px-2 py-2 text-center border-b">
                                         <div
-                                            onClick={(e) =>
-                                                openPresenceMenu(
-                                                    e,
-                                                    obecnosc,
-                                                    zajecie.id_zajec,
-                                                    student.id_ucznia
-                                                )
-                                            }
-                                            className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto ${getPresenceColor(status)}`}
+                                            onClick={(e) => openPresenceMenu(e, obecnosc, zajecie.id_zajec, student.id_ucznia)}
+                                            className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto transition-all hover:scale-110 ${getPresenceColor(status)}`}
+                                            title={`Kliknij aby zmienić obecność dla ${student.pseudonim}`}
                                         >
-                                            <span className={`font-bold ${getPresenceTextColor(status)}`}>
+                                            <span className={`font-bold text-sm ${getPresenceTextColor(status)}`}>
                                                 {getPresenceText(status)}
                                             </span>
                                         </div>
-
                                     </td>
                                 );
                             })}
@@ -521,8 +548,8 @@ function AttendanceMatrix({
                 </table>
             </div>
 
-            {/* Legenda */}
-            <div className="p-3 bg-gray-50 border-t text-xs flex justify-center gap-4">
+
+            <div className="p-3 bg-gray-50 border-t text-xs flex justify-center gap-4 flex-wrap">
                 <LegendItem color="green" text="Obecny" symbol="✓"/>
                 <LegendItem color="red" text="Nieobecny" symbol="✗"/>
                 <LegendItem color="gray" text="Nieustalone" symbol="?"/>
@@ -541,7 +568,7 @@ function LegendItem({ color, text, symbol }) {
     return (
         <div className="flex items-center gap-1">
             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${bg}`}>
-                <span className="font-bold">{symbol}</span>
+                <span className="font-bold text-xs">{symbol}</span>
             </div>
             <span className="text-gray-600">{text}</span>
         </div>
