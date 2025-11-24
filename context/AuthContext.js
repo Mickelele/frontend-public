@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getCurrentUser, logout } from '/lib/auth';
+import { getCurrentUser, logout as authLogout } from '/lib/auth';
 
 const AuthContext = createContext();
 
@@ -9,22 +9,57 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        (async () => {
-            const u = await getCurrentUser();
-            setUser(u);
-            setLoading(false);
-        })();
+        checkAuth();
     }, []);
 
+    const checkAuth = async () => {
+        try {
+            const userData = await getCurrentUser();
+
+            if (userData && (userData.id || userData.id_uzytkownika)) {
+
+                const normalizedUser = {
+                    id: userData.id || userData.id_uzytkownika,
+                    imie: userData.imie,
+                    nazwisko: userData.nazwisko,
+                    email: userData.email,
+                    role: userData.rola || userData.role
+                };
+
+                setUser(normalizedUser);
+            } else {
+                authLogout();
+            }
+        } catch (error) {
+            authLogout();
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleLogout = () => {
-        logout();
+        console.log('🚪 AuthContext: Wylogowywanie użytkownika');
+        authLogout();
         setUser(null);
+    };
+
+    const login = (userData) => {
+        console.log('🔐 AuthContext: Logowanie użytkownika:', userData);
+        const normalizedUser = {
+            id: userData.id || userData.id_uzytkownika,
+            imie: userData.imie,
+            nazwisko: userData.nazwisko,
+            email: userData.email,
+            role: userData.rola || userData.role
+        };
+        setUser(normalizedUser);
     };
 
     return (
         <AuthContext.Provider value={{
             user,
             setUser,
+            login,
             logout: handleLogout,
             loading
         }}>
@@ -34,5 +69,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-    return useContext(AuthContext);
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 }

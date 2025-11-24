@@ -1,10 +1,11 @@
+// components/Navbar.js
 'use client';
 import Link from 'next/link';
 import { useAuth } from '/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const router = useRouter();
 
     const handleLogout = () => {
@@ -16,6 +17,16 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
+    const getRoleLabel = (role) => {
+        const roles = {
+            'administrator': 'Administrator',
+            'nauczyciel': 'Nauczyciel',
+            'opiekun': 'Opiekun',
+            'uczen': 'Uczeń'
+        };
+        return roles[role] || role;
+    };
+
     return (
         <nav className="w-full bg-white shadow-md p-4 flex items-center justify-between">
             <div className="flex items-center space-x-8">
@@ -23,8 +34,7 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
                     MojeLogo
                 </Link>
 
-                {/* Linki widoczne tylko gdy użytkownik NIE jest zalogowany */}
-                {!user && (
+                {!loading && !user && (
                     <div className="hidden md:flex space-x-4 text-gray-700 font-medium">
                         <Link href="/#oferta" className="hover:text-blue-600 transition">Oferta</Link>
                         <Link href="/#o-nas" className="hover:text-blue-600 transition">O nas</Link>
@@ -34,11 +44,21 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
             </div>
 
             <div className="flex items-center space-x-4">
-                {user ? (
+                {loading ? (
+                    <div className="flex items-center space-x-4">
+                        <div className="text-gray-500 text-sm">Weryfikacja...</div>
+                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                ) : user ? (
                     <>
-                        <span className="text-gray-700 font-medium hidden md:inline">
-                            Witaj, {user.imie}
-                        </span>
+                        <div className="hidden md:flex flex-col items-end">
+                            <span className="text-gray-700 font-medium">
+                                Witaj, {user.imie}
+                            </span>
+                            <span className="text-xs text-blue-600 font-medium">
+                                {getRoleLabel(user.role)}
+                            </span>
+                        </div>
 
                         {/* Przycisk hamburger menu */}
                         <button
