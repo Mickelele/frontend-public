@@ -49,7 +49,6 @@ export default function Sidebar({ isOpen, onClose }) {
 
                 return [
                     { href: '/dashboard/nauczyciel', label: 'Dashboard', icon: '📊', description: 'Panel nauczyciela' },
-                    { href: '/dashboard/nauczyciel', label: 'Moje lekcje', icon: '📚', description: 'Harmonogram zajęć' },
                     { href: '/dashboard/nauczyciel/attendance', label: 'Obecności', icon: '✅', description: 'Sprawdzanie obecności' },
                     { href: '/dashboard/nauczyciel/worktime', label: 'Czas pracy', icon: '⏰', description: 'Godziny pracy' },
                     { href: '/dashboard/nauczyciel/quizzes', label: 'Quizy', icon: '🧩', description: 'Testy i quizy' },

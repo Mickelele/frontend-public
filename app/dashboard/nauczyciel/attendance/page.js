@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMyCourses } from "../../../../lib/api/course.api";
+import { getMyCourses, addComment } from "../../../../lib/api/course.api";
 import { getUserIdFromToken } from "../../../../lib/auth";
 import { setPresence, createPresence, deletePresence } from "../../../../lib/api/presence.api";
 
@@ -19,6 +19,12 @@ export default function TeacherCoursesPage() {
         idZajec: null,
         idStudenta: null
     });
+    const [remarkModal, setRemarkModal] = useState({
+        visible: false,
+        zajecie: null,
+        selectedStudent: null,
+        tresc: ""
+    });
 
     const dniTygodnia = [
         "Poniedziałek",
@@ -29,7 +35,6 @@ export default function TeacherCoursesPage() {
         "Sobota",
         "Niedziela"
     ];
-
 
     useEffect(() => {
         const teacherId = getUserIdFromToken();
@@ -86,6 +91,14 @@ export default function TeacherCoursesPage() {
     const getPresenceTextColor = s =>
         s === null ? "text-gray-600" : s ? "text-green-600" : "text-red-600";
 
+    const getStudentFullName = (student) => {
+        return `${student.imie} ${student.nazwisko}`;
+    };
+
+    const isStudentPresent = (zajecie, studentId) => {
+        const status = getStudentPresence(zajecie, studentId);
+        return status === true;
+    };
 
     const openPresenceMenu = (e, obecnosc, zajecieId, studentId) => {
         const rect = e.target.getBoundingClientRect();
@@ -99,6 +112,60 @@ export default function TeacherCoursesPage() {
         });
     };
 
+    const openRemarkModal = (zajecie) => {
+        setRemarkModal({
+            visible: true,
+            zajecie,
+            selectedStudent: null,
+            tresc: ""
+        });
+    };
+
+    const closeRemarkModal = () => {
+        setRemarkModal({
+            visible: false,
+            zajecie: null,
+            selectedStudent: null,
+            tresc: ""
+        });
+    };
+
+    const handleRemarkSubmit = async () => {
+        if (!remarkModal.tresc.trim()) {
+            alert("Proszę wpisać treść uwagi");
+            return;
+        }
+
+        if (!remarkModal.selectedStudent) {
+            alert("Proszę wybrać ucznia");
+            return;
+        }
+
+        try {
+            setUpdating(true);
+            const teacherId = getUserIdFromToken();
+
+            const remarkData = {
+                id_ucznia: remarkModal.selectedStudent.id_ucznia,
+                id_zajec: remarkModal.zajecie.id_zajec,
+                tresc: remarkModal.tresc,
+                id_nauczyciela: teacherId
+            };
+
+
+            const result = await addComment(remarkData);
+
+
+            closeRemarkModal();
+            alert("Uwaga została dodana pomyślnie!");
+
+        } catch (error) {
+            console.error("Błąd przy dodawaniu uwagi:", error);
+            alert("Wystąpił błąd podczas dodawania uwagi");
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     const updatePresenceOptimistically = (zajecieId, studentId, value) => {
         setCourses(prevCourses =>
@@ -111,14 +178,12 @@ export default function TeacherCoursesPage() {
                             const existingObecnosc = zajecie.obecnosci?.find(o => o.id_ucznia === studentId);
 
                             if (value === null) {
-
                                 const updatedObecnosci = zajecie.obecnosci?.filter(o => o.id_ucznia !== studentId) || [];
                                 return {
                                     ...zajecie,
                                     obecnosci: updatedObecnosci
                                 };
                             } else {
-
                                 const newObecnosc = {
                                     id_obecnosci: existingObecnosc?.id_obecnosci || `temp-${Date.now()}`,
                                     id_ucznia: studentId,
@@ -152,15 +217,12 @@ export default function TeacherCoursesPage() {
             setUpdating(true);
             const { idObecnosci, idZajec, idStudenta } = presenceMenu;
 
-
             if (!idZajec || !idStudenta) {
                 console.error("Brak wymaganych danych:", presenceMenu);
                 return;
             }
 
-
             updatePresenceOptimistically(idZajec, idStudenta, value);
-
 
             setPresenceMenu({
                 visible: false,
@@ -180,30 +242,22 @@ export default function TeacherCoursesPage() {
                 apiCall = deletePresence(idObecnosci);
             }
 
-
             if (apiCall) {
                 apiCall
                     .then(result => {
-                        console.log("Operacja API zakończona sukcesem:", result);
-
                     })
                     .catch(error => {
-                        console.error("Błąd API, przywracanie stanu:", error);
-
                         loadCourses(selectedDay);
                     });
             }
 
         } catch (err) {
             console.error("Błąd przy zapisie obecności:", err);
-
             loadCourses(selectedDay);
         } finally {
             setUpdating(false);
         }
     };
-
-
 
     if (loading) {
         return (
@@ -219,7 +273,6 @@ export default function TeacherCoursesPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-6 relative">
             <div className="max-w-full mx-auto">
-
 
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-800">Moje kursy i grupy</h1>
@@ -258,7 +311,6 @@ export default function TeacherCoursesPage() {
                     </div>
                 </div>
 
-
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     <StatCard title="Liczba kursów" value={courses.length} color="text-blue-600" />
                     <StatCard
@@ -284,7 +336,6 @@ export default function TeacherCoursesPage() {
                     </div>
                 )}
 
-
                 {courses.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-lg shadow">
                         <h2 className="text-xl font-semibold text-gray-800 mb-2">
@@ -300,10 +351,8 @@ export default function TeacherCoursesPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-
                         {courses.map(course => (
                             <div key={course.id_kursu} className="bg-white rounded-lg shadow overflow-hidden">
-
                                 <div className="bg-blue-50 px-6 py-4 border-b flex justify-between items-center">
                                     <div>
                                         <h2 className="text-xl font-bold text-gray-800">
@@ -317,7 +366,6 @@ export default function TeacherCoursesPage() {
                                         {course.grupy.length} {course.grupy.length === 1 ? 'grupa' : 'grup'}
                                     </span>
                                 </div>
-
 
                                 <div className="p-6 space-y-6">
                                     {course.grupy.map(grupa => (
@@ -334,6 +382,8 @@ export default function TeacherCoursesPage() {
                                             getPresenceText={getPresenceText}
                                             getPresenceTextColor={getPresenceTextColor}
                                             openPresenceMenu={openPresenceMenu}
+                                            openRemarkModal={openRemarkModal}
+                                            getStudentFullName={getStudentFullName}
                                         />
                                     ))}
                                 </div>
@@ -341,7 +391,6 @@ export default function TeacherCoursesPage() {
                         ))}
                     </div>
                 )}
-
 
                 {presenceMenu.visible && (
                     <div
@@ -381,11 +430,108 @@ export default function TeacherCoursesPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Modal do dodawania uwag */}
+                {remarkModal.visible && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                            <div className="p-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4">
+                                    Dodaj uwagę
+                                </h3>
+
+                                <div className="mb-4">
+                                    <p className="text-sm text-gray-600 mb-2">
+                                        Zajęcia: <strong>{getNazwaZajec(remarkModal.zajecie)}</strong><br />
+                                        Data: <strong>{formatDate(remarkModal.zajecie?.data)}</strong>
+                                    </p>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Wybierz ucznia (tylko obecni):
+                                    </label>
+                                    <select
+                                        value={remarkModal.selectedStudent?.id_ucznia || ""}
+                                        onChange={(e) => {
+                                            const studentId = e.target.value;
+                                            const grupa = courses
+                                                .flatMap(c => c.grupy)
+                                                .find(g => g.zajecia?.some(z => z.id_zajec === remarkModal.zajecie?.id_zajec));
+                                            const student = grupa?.uczniowie?.find(u => u.id_ucznia == studentId);
+                                            setRemarkModal(prev => ({ ...prev, selectedStudent: student || null }));
+                                        }}
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Wybierz ucznia...</option>
+                                        {(() => {
+                                            const grupa = courses
+                                                .flatMap(c => c.grupy)
+                                                .find(g => g.zajecia?.some(z => z.id_zajec === remarkModal.zajecie?.id_zajec));
+
+                                            // Filtruj tylko obecnych uczniów
+                                            const obecniUczniowie = grupa?.uczniowie?.filter(student =>
+                                                isStudentPresent(remarkModal.zajecie, student.id_ucznia)
+                                            ) || [];
+
+                                            return obecniUczniowie.map(student => (
+                                                <option key={student.id_ucznia} value={student.id_ucznia}>
+                                                    {getStudentFullName(student)}
+                                                </option>
+                                            ));
+                                        })()}
+                                    </select>
+                                    {(() => {
+                                        const grupa = courses
+                                            .flatMap(c => c.grupy)
+                                            .find(g => g.zajecia?.some(z => z.id_zajec === remarkModal.zajecie?.id_zajec));
+                                        const obecniUczniowie = grupa?.uczniowie?.filter(student =>
+                                            isStudentPresent(remarkModal.zajecie, student.id_ucznia)
+                                        ) || [];
+
+                                        if (obecniUczniowie.length === 0) {
+                                            return (
+                                                <p className="text-sm text-red-600 mt-2">
+                                                    Brak obecnych uczniów na tych zajęciach
+                                                </p>
+                                            );
+                                        }
+                                    })()}
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Treść uwagi:
+                                    </label>
+                                    <textarea
+                                        value={remarkModal.tresc}
+                                        onChange={(e) => setRemarkModal(prev => ({ ...prev, tresc: e.target.value }))}
+                                        placeholder="Wpisz treść uwagi..."
+                                        className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        onClick={closeRemarkModal}
+                                        className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                    >
+                                        Anuluj
+                                    </button>
+                                    <button
+                                        onClick={handleRemarkSubmit}
+                                        disabled={updating || !remarkModal.tresc.trim() || !remarkModal.selectedStudent}
+                                        className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        {updating ? "Dodawanie..." : "Dodaj uwagę"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 }
-
 
 function StatCard({ title, value, color }) {
     return (
@@ -407,11 +553,12 @@ function GroupSection({
                           getPresenceColor,
                           getPresenceText,
                           getPresenceTextColor,
-                          openPresenceMenu
+                          openPresenceMenu,
+                          openRemarkModal,
+                          getStudentFullName
                       }) {
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-
             <div
                 className="bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 flex justify-between items-center transition-colors"
                 onClick={toggleGroup}
@@ -457,6 +604,8 @@ function GroupSection({
                             getPresenceText={getPresenceText}
                             getPresenceTextColor={getPresenceTextColor}
                             openPresenceMenu={openPresenceMenu}
+                            openRemarkModal={openRemarkModal}
+                            getStudentFullName={getStudentFullName}
                         />
                     )}
                 </div>
@@ -473,7 +622,9 @@ function AttendanceMatrix({
                               getPresenceColor,
                               getPresenceText,
                               getPresenceTextColor,
-                              openPresenceMenu
+                              openPresenceMenu,
+                              openRemarkModal,
+                              getStudentFullName
                           }) {
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -495,6 +646,13 @@ function AttendanceMatrix({
                                     <span className="text-xs text-gray-400 mt-1 truncate max-w-[100px]" title={getNazwaZajec(zajecie)}>
                                         {getNazwaZajec(zajecie)}
                                     </span>
+                                    <button
+                                        onClick={() => openRemarkModal(zajecie)}
+                                        className="text-xs text-blue-500 hover:text-blue-700 mt-1 underline"
+                                        title="Dodaj uwagę do tych zajęć"
+                                    >
+                                        Dodaj uwagę
+                                    </button>
                                 </div>
                             </th>
                         ))}
@@ -502,52 +660,52 @@ function AttendanceMatrix({
                     </thead>
 
                     <tbody>
-                    {grupa.uczniowie.map((student, rowIndex) => (
-                        <tr key={student.id_ucznia} className={rowIndex % 2 ? "bg-gray-50" : "bg-white"}>
+                    {grupa.uczniowie.map((student, rowIndex) => {
 
-                            <td className="px-4 py-3 sticky left-0 bg-inherit border-r z-5">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span className="text-blue-600 text-sm font-medium">
-                                            {student.pseudonim.charAt(0).toUpperCase()}
-                                        </span>
+                        return (
+                            <tr key={student.id_ucznia} className={rowIndex % 2 ? "bg-gray-50" : "bg-white"}>
+                                <td className="px-4 py-3 sticky left-0 bg-inherit border-r z-5">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-600 text-sm font-medium">
+                                {student.imie?.charAt(0).toUpperCase()}
+                            </span>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-medium truncate text-gray-900">
+                                                {getStudentFullName(student)}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                Punkty: {student.saldo_punktow}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="font-medium truncate text-gray-900">
-                                            {student.pseudonim}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            Punkty: {student.saldo_punktow}
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
+                                </td>
 
+                                {grupa.zajecia.map(zajecie => {
+                                    const status = getStudentPresence(zajecie, student.id_ucznia);
+                                    const obecnosc = zajecie.obecnosci?.find(o => o.id_ucznia === student.id_ucznia);
 
-                            {grupa.zajecia.map(zajecie => {
-                                const status = getStudentPresence(zajecie, student.id_ucznia);
-                                const obecnosc = zajecie.obecnosci?.find(o => o.id_ucznia === student.id_ucznia);
-
-                                return (
-                                    <td key={`${student.id_ucznia}-${zajecie.id_zajec}`} className="px-2 py-2 text-center border-b">
-                                        <div
-                                            onClick={(e) => openPresenceMenu(e, obecnosc, zajecie.id_zajec, student.id_ucznia)}
-                                            className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto transition-all hover:scale-110 ${getPresenceColor(status)}`}
-                                            title={`Kliknij aby zmienić obecność dla ${student.pseudonim}`}
-                                        >
-                                            <span className={`font-bold text-sm ${getPresenceTextColor(status)}`}>
-                                                {getPresenceText(status)}
-                                            </span>
-                                        </div>
-                                    </td>
-                                );
-                            })}
-                        </tr>
-                    ))}
+                                    return (
+                                        <td key={`${student.id_ucznia}-${zajecie.id_zajec}`} className="px-2 py-2 text-center border-b">
+                                            <div
+                                                onClick={(e) => openPresenceMenu(e, obecnosc, zajecie.id_zajec, student.id_ucznia)}
+                                                className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto transition-all hover:scale-110 ${getPresenceColor(status)}`}
+                                                title={`Kliknij aby zmienić obecność dla ${getStudentFullName(student)}`}
+                                            >
+                                <span className={`font-bold text-sm ${getPresenceTextColor(status)}`}>
+                                    {getPresenceText(status)}
+                                </span>
+                                            </div>
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        );
+                    })}
                     </tbody>
                 </table>
             </div>
-
 
             <div className="p-3 bg-gray-50 border-t text-xs flex justify-center gap-4 flex-wrap">
                 <LegendItem color="green" text="Obecny" symbol="✓"/>
