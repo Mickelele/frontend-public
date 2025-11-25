@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getMyCourses, addComment } from "../../../../lib/api/course.api";
 import { getUserIdFromToken } from "../../../../lib/auth";
 import { setPresence, createPresence, deletePresence } from "../../../../lib/api/presence.api";
+import { updateEquipmentRemark } from "../../../../lib/api/lesson.api";
 
 export default function TeacherCoursesPage() {
     const [courses, setCourses] = useState([]);
@@ -25,6 +26,54 @@ export default function TeacherCoursesPage() {
         selectedStudent: null,
         tresc: ""
     });
+
+    const [equipmentRemarkModal, setEquipmentRemarkModal] = useState({
+        visible: false,
+        zajecie: null,
+        tresc: ""
+    });
+
+    const handleEquipmentRemarkSubmit = async () => {
+        if (!equipmentRemarkModal.tresc.trim()) {
+            alert("Wpisz treść uwagi o sprzęcie");
+            return;
+        }
+
+        try {
+            setUpdating(true);
+
+            await updateEquipmentRemark(
+                equipmentRemarkModal.zajecie.id_zajec,
+                equipmentRemarkModal.tresc
+            );
+
+            alert("Uwaga o sprzęcie zapisana!");
+            closeEquipmentRemarkModal();
+
+            loadCourses(selectedDay);
+        } catch (err) {
+            console.error(err);
+            alert("Błąd przy zapisie uwagi o sprzęcie");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const openEquipmentRemarkModal = (zajecie) => {
+        setEquipmentRemarkModal({
+            visible: true,
+            zajecie,
+            tresc: zajecie.uwaga_do_sprzetu || ""
+        });
+    };
+
+    const closeEquipmentRemarkModal = () => {
+        setEquipmentRemarkModal({
+            visible: false,
+            zajecie: null,
+            tresc: ""
+        });
+    };
 
     const dniTygodnia = [
         "Poniedziałek",
@@ -152,9 +201,7 @@ export default function TeacherCoursesPage() {
                 id_nauczyciela: teacherId
             };
 
-
             const result = await addComment(remarkData);
-
 
             closeRemarkModal();
             alert("Uwaga została dodana pomyślnie!");
@@ -383,6 +430,7 @@ export default function TeacherCoursesPage() {
                                             getPresenceTextColor={getPresenceTextColor}
                                             openPresenceMenu={openPresenceMenu}
                                             openRemarkModal={openRemarkModal}
+                                            openEquipmentRemarkModal={openEquipmentRemarkModal}
                                             getStudentFullName={getStudentFullName}
                                         />
                                     ))}
@@ -431,7 +479,6 @@ export default function TeacherCoursesPage() {
                     </div>
                 )}
 
-                {/* Modal do dodawania uwag */}
                 {remarkModal.visible && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
@@ -528,6 +575,46 @@ export default function TeacherCoursesPage() {
                         </div>
                     </div>
                 )}
+
+                {equipmentRemarkModal.visible && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                            <div className="p-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4">
+                                    Uwaga o sprzęcie
+                                </h3>
+
+                                <p className="text-sm text-gray-600 mb-2">
+                                    Zajęcia: <strong>{getNazwaZajec(equipmentRemarkModal.zajecie)}</strong><br />
+                                    Data: <strong>{formatDate(equipmentRemarkModal.zajecie?.data)}</strong>
+                                </p>
+
+                                <textarea
+                                    value={equipmentRemarkModal.tresc}
+                                    onChange={e => setEquipmentRemarkModal(prev => ({ ...prev, tresc: e.target.value }))}
+                                    placeholder="Opisz problem ze sprzętem..."
+                                    className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                />
+
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        onClick={closeEquipmentRemarkModal}
+                                        className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                    >
+                                        Anuluj
+                                    </button>
+                                    <button
+                                        onClick={handleEquipmentRemarkSubmit}
+                                        disabled={updating || !equipmentRemarkModal.tresc.trim()}
+                                        className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-orange-300 transition-colors"
+                                    >
+                                        {updating ? "Zapis..." : "Zapisz"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -555,6 +642,7 @@ function GroupSection({
                           getPresenceTextColor,
                           openPresenceMenu,
                           openRemarkModal,
+                          openEquipmentRemarkModal,
                           getStudentFullName
                       }) {
     return (
@@ -605,6 +693,7 @@ function GroupSection({
                             getPresenceTextColor={getPresenceTextColor}
                             openPresenceMenu={openPresenceMenu}
                             openRemarkModal={openRemarkModal}
+                            openEquipmentRemarkModal={openEquipmentRemarkModal}
                             getStudentFullName={getStudentFullName}
                         />
                     )}
@@ -624,6 +713,7 @@ function AttendanceMatrix({
                               getPresenceTextColor,
                               openPresenceMenu,
                               openRemarkModal,
+                              openEquipmentRemarkModal,
                               getStudentFullName
                           }) {
     return (
@@ -653,6 +743,13 @@ function AttendanceMatrix({
                                     >
                                         Dodaj uwagę
                                     </button>
+                                    <button
+                                        onClick={() => openEquipmentRemarkModal(zajecie)}
+                                        className="text-xs text-orange-500 hover:text-orange-700 mt-1 underline"
+                                        title="Dodaj uwagę do sprzętu"
+                                    >
+                                        Sprzęt
+                                    </button>
                                 </div>
                             </th>
                         ))}
@@ -661,15 +758,14 @@ function AttendanceMatrix({
 
                     <tbody>
                     {grupa.uczniowie.map((student, rowIndex) => {
-
                         return (
                             <tr key={student.id_ucznia} className={rowIndex % 2 ? "bg-gray-50" : "bg-white"}>
                                 <td className="px-4 py-3 sticky left-0 bg-inherit border-r z-5">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-blue-600 text-sm font-medium">
-                                {student.imie?.charAt(0).toUpperCase()}
-                            </span>
+                                            <span className="text-blue-600 text-sm font-medium">
+                                                {student.imie?.charAt(0).toUpperCase()}
+                                            </span>
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="font-medium truncate text-gray-900">
@@ -693,9 +789,9 @@ function AttendanceMatrix({
                                                 className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto transition-all hover:scale-110 ${getPresenceColor(status)}`}
                                                 title={`Kliknij aby zmienić obecność dla ${getStudentFullName(student)}`}
                                             >
-                                <span className={`font-bold text-sm ${getPresenceTextColor(status)}`}>
-                                    {getPresenceText(status)}
-                                </span>
+                                                <span className={`font-bold text-sm ${getPresenceTextColor(status)}`}>
+                                                    {getPresenceText(status)}
+                                                </span>
                                             </div>
                                         </td>
                                     );
