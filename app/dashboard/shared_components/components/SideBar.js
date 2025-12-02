@@ -61,8 +61,11 @@ export default function Sidebar({ isOpen, onClose }) {
 
                 return [
                     { href: '/dashboard/opiekun', label: 'Dashboard', icon: '📊', description: 'Panel główny' },
-                    { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Twój profil' },
                     { href: '/dashboard/shared_components/students_presence', label: 'Obecności uczniów', icon: '📋', description: 'Śledzenie obecności' },
+                    { href: '/dashboard/nauczyciel/messages', label: 'Wiadomości', icon: '💬', description: 'Komunikacja' },
+                    { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Twój profil' },
+                    { href: '/dashboard/nauczyciel/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },
+
                 ];
             case 'uczen':
 
