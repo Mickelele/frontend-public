@@ -24,7 +24,6 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer, error:
         }
     };
 
-    // Use external error if provided, otherwise use internal error
     const displayError = externalError || error;
 
     const handleSubmit = async (e) => {

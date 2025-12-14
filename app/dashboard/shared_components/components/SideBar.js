@@ -51,7 +51,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/nauczyciel', label: 'Dashboard', icon: '📊', description: 'Panel nauczyciela' },
                     { href: '/dashboard/nauczyciel/attendance', label: 'Obecności', icon: '✅', description: 'Sprawdzanie obecności' },
                     { href: '/dashboard/nauczyciel/worktime', label: 'Czas pracy', icon: '⏰', description: 'Godziny pracy' },
-                    { href: '/dashboard/nauczyciel/quizzes', label: 'Quizy', icon: '🧩', description: 'Testy i quizy' },
+                    { href: '/dashboard/nauczyciel/quiz', label: 'Quizy', icon: '🧩', description: 'Testy i quizy' },
                     { href: '/dashboard/nauczyciel/homework', label: 'Zadania domowe', icon: '📝', description: 'Zadania i prace' },
                     { href: '/dashboard/nauczyciel/messages', label: 'Wiadomości', icon: '💬', description: 'Komunikacja' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Dane osobowe' },
