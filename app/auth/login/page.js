@@ -38,7 +38,7 @@ export default function LoginPage() {
                 setError('Błąd logowania: brak tokena');
             }
         } catch (error) {
-            setError('Błąd logowania: ' + (error.message || 'Sprawdź dane logowania'));
+            setError('Wprowadzone dane są nieprawidłowe. Sprawdź poprawność wpisanych danych.');
         }
     };
 
@@ -49,15 +49,12 @@ export default function LoginPage() {
 
     return (
         <div>
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    {error}
-                </div>
-            )}
             <AuthForm
                 fields={fields}
                 onSubmit={onSubmit}
                 submitLabel="Zaloguj się"
+                error={error}
+                onErrorClear={() => setError('')}
                 footer={
                     <p className="text-gray-600">
                         Nie masz konta?{' '}

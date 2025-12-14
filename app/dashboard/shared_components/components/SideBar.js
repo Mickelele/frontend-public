@@ -72,7 +72,8 @@ export default function Sidebar({ isOpen, onClose }) {
                 return [
                     { href: '/dashboard/uczen', label: 'Dashboard', icon: '📊', description: 'Panel ucznia' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Twój profil' },
-                    { href: '/dashboard/uczen/grades', label: 'Moje oceny', icon: '⭐', description: 'Twoje oceny' },
+                    { href: '/dashboard/uczen/grades', label: 'Moje oceny', icon: '🏆', description: 'Twoje oceny' },
+                    { href: '/dashboard/uczen/prizes', label: 'Punkty i nagrody', icon: '⭐', description: 'Odbierz nagrody za punkty' },
                 ];
             default:
 

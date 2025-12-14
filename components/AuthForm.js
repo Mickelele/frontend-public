@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-export default function AuthForm({ fields, onSubmit, submitLabel, footer }) {
+export default function AuthForm({ fields, onSubmit, submitLabel, footer, error: externalError, onErrorClear }) {
     const [values, setValues] = useState({});
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +19,13 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer }) {
     const handleChange = (e) => {
         setValues({ ...values, [e.target.name]: e.target.value });
         if (error) setError(null);
+        if (externalError && onErrorClear) {
+            onErrorClear();
+        }
     };
+
+    // Use external error if provided, otherwise use internal error
+    const displayError = externalError || error;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -68,9 +74,9 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer }) {
                         </div>
                     ))}
 
-                    {error && (
-                        <div className="rounded-md bg-red-50 p-4 border border-red-200">
-                            <p className="text-sm text-red-700">{error}</p>
+                    {displayError && (
+                        <div className="text-red-600 text-sm mt-1">
+                            {displayError}
                         </div>
                     )}
 
