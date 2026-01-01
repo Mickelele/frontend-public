@@ -1,0 +1,129 @@
+/* Dodatkowe style dla Todo List */
+
+/* Animacje dla zadań */
+@keyframes taskSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes taskComplete {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.task-item {
+    animation: taskSlideIn 0.3s ease-out;
+}
+
+.task-complete-animation {
+    animation: taskComplete 0.4s ease-in-out;
+}
+
+/* Checkbox z lepszą animacją */
+.task-checkbox {
+    transition: all 0.2s ease-in-out;
+}
+
+.task-checkbox:hover {
+    transform: scale(1.1);
+}
+
+/* Priorytet - pulsujące tło dla bardzo wysokiego */
+@keyframes priorityPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+.priority-very-high {
+    animation: priorityPulse 2s ease-in-out infinite;
+}
+
+/* Zaległe zadania - delikatne pulsowanie */
+@keyframes overduePulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+}
+
+.task-overdue {
+    animation: overduePulse 2s ease-in-out infinite;
+}
+
+/* Hover na kartach zadań */
+.task-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Modal backdrop z blur */
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease-in-out;
+}
+
+/* Scrollbar dla listy zadań */
+.task-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.task-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.task-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsywne ulepszenia */
+@media (max-width: 768px) {
+    .todo-container {
+        padding: 1rem;
+    }
+    
+    .task-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* Dark mode ready (opcjonalnie) */
+@media (prefers-color-scheme: dark) {
+    .task-card {
+        background: #1f2937;
+        color: #f9fafb;
+    }
+    
+    .modal-content {
+        background: #1f2937;
+        color: #f9fafb;
+    }
+}
