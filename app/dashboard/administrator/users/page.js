@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '/context/AuthContext';
-import { getStudents, createStudent, updateStudent, deleteStudent, enrollStudentToGroup } from '/lib/api/student.api';
+import { getStudents, createStudent, updateStudent, deleteStudent, enrollStudentToGroup, assignGuardianToStudent } from '/lib/api/student.api';
 import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from '/lib/api/teacher.api';
 import { getAllGuardians, createGuardian, updateGuardian, deleteGuardian } from '/lib/api/guardian.api';
 import { getCourses, getCourseGroups } from '/lib/api/course.api';
@@ -24,6 +24,7 @@ export default function UsersManagement() {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalType, setModalType] = useState('');
+    const [guardianSearchTerm, setGuardianSearchTerm] = useState('');
     
     const [userForm, setUserForm] = useState({
         imie: '',
@@ -59,7 +60,15 @@ export default function UsersManagement() {
                 (studentsData || []).map(async (student) => {
                     try {
                         const userData = await getUserById(student.id_ucznia);
-                        return { ...student, ...userData };
+                        let guardianData = null;
+                        if (student.Opiekun_id_opiekuna) {
+                            try {
+                                guardianData = await getUserById(student.Opiekun_id_opiekuna);
+                            } catch (err) {
+                                console.error(`Błąd pobierania danych opiekuna ${student.Opiekun_id_opiekuna}:`, err);
+                            }
+                        }
+                        return { ...student, ...userData, opiekun: guardianData };
                     } catch (err) {
                         console.error(`Błąd pobierania danych użytkownika dla ucznia ${student.id_ucznia}:`, err);
                         return student;
@@ -141,10 +150,14 @@ export default function UsersManagement() {
                 const userId = newUser.id_uzytkownika;
 
                 if (userForm.rola === 'uczen') {
+                    if (!userForm.id_grupa || !userForm.id_opiekuna) {
+                        throw new Error('Wybierz grupę i opiekuna dla ucznia');
+                    }
+                    
                     await createStudent({
                         id_ucznia: userId,
-                        id_grupa: userForm.id_grupa || null,
-                        Opiekun_id_opiekuna: userForm.id_opiekuna || null,
+                        id_grupa: parseInt(userForm.id_grupa),
+                        Opiekun_id_opiekuna: parseInt(userForm.id_opiekuna),
                         saldo_punktow: 0,
                         pseudonim: userForm.pseudonim || `${userForm.imie}_${userForm.nazwisko}`
                     });
@@ -207,7 +220,12 @@ export default function UsersManagement() {
             });
         } catch (err) {
             console.error('Błąd zapisywania użytkownika:', err);
-            alert('Nie udało się zapisać użytkownika');
+            
+            if (err.message && err.message.includes('Wybierz grupę i opiekuna')) {
+                alert(err.message);
+            } else {
+                alert('Nie udało się zapisać użytkownika: ' + (err.message || 'Nieznany błąd'));
+            }
         }
     };
 
@@ -227,6 +245,7 @@ export default function UsersManagement() {
 
     const handleAssignGuardian = (student) => {
         setSelectedUser(student);
+        setGuardianSearchTerm('');
         setShowAssignModal(true);
     };
 
@@ -235,9 +254,17 @@ export default function UsersManagement() {
         const formData = new FormData(e.target);
         const guardianId = formData.get('guardian_id');
         
+        if (!guardianId) {
+            alert('Wybierz opiekuna');
+            return;
+        }
+        
         try {
-            alert(`Funkcja przypisywania opiekuna ${guardianId} do ucznia ${selectedUser.id_ucznia} zostanie wkrótce zaimplementowana w API`);
+            await assignGuardianToStudent(selectedUser.id_ucznia, parseInt(guardianId));
+            alert('Opiekun został przypisany pomyślnie!');
             setShowAssignModal(false);
+            setGuardianSearchTerm('');
+            await loadUsersData();
         } catch (err) {
             console.error('Błąd przypisywania opiekuna:', err);
             alert('Nie udało się przypisać opiekuna');
@@ -495,14 +522,32 @@ export default function UsersManagement() {
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                        {student.id_opiekuna ? (
-                                                            <span className="text-gray-700">ID: {student.id_opiekuna}</span>
+                                                        {student.Opiekun_id_opiekuna ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <div>
+                                                                    <div className="text-gray-900 font-medium">
+                                                                        {student.opiekun ? `${student.opiekun.imie} ${student.opiekun.nazwisko}` : `ID: ${student.Opiekun_id_opiekuna}`}
+                                                                    </div>
+                                                                    {student.opiekun && (
+                                                                        <div className="text-xs text-gray-500">
+                                                                            {student.opiekun.email}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => handleAssignGuardian(student)}
+                                                                    className="text-xs px-2 py-1 text-blue-600 hover:text-blue-800 border border-blue-300 rounded hover:bg-blue-50"
+                                                                    title="Zmień opiekuna"
+                                                                >
+                                                                    🔄 Zmień
+                                                                </button>
+                                                            </div>
                                                         ) : (
                                                             <button
                                                                 onClick={() => handleAssignGuardian(student)}
-                                                                className="text-blue-600 hover:text-blue-800"
+                                                                className="text-blue-600 hover:text-blue-800 font-medium"
                                                             >
-                                                                Przypisz
+                                                                ➕ Przypisz
                                                             </button>
                                                         )}
                                                     </td>
@@ -669,22 +714,24 @@ export default function UsersManagement() {
 
                         <form onSubmit={handleSaveUser}>
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Rola *
-                                    </label>
-                                    <select
-                                        value={userForm.rola}
-                                        onChange={(e) => setUserForm({ ...userForm, rola: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    >
-                                        <option value="uczen">Uczeń</option>
-                                        <option value="nauczyciel">Nauczyciel</option>
-                                        <option value="opiekun">Opiekun</option>
-                                        <option value="administrator">Administrator</option>
-                                    </select>
-                                </div>
+                                {modalType === 'create' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Rola *
+                                        </label>
+                                        <select
+                                            value={userForm.rola}
+                                            onChange={(e) => setUserForm({ ...userForm, rola: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        >
+                                            <option value="uczen">Uczeń</option>
+                                            <option value="nauczyciel">Nauczyciel</option>
+                                            <option value="opiekun">Opiekun</option>
+                                            <option value="administrator">Administrator</option>
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -740,18 +787,62 @@ export default function UsersManagement() {
                                 </div>
 
                                 {userForm.rola === 'uczen' && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Pseudonim
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={userForm.pseudonim}
-                                            onChange={(e) => setUserForm({ ...userForm, pseudonim: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Zostaw puste dla automatycznego"
-                                        />
-                                    </div>
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Pseudonim
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={userForm.pseudonim}
+                                                onChange={(e) => setUserForm({ ...userForm, pseudonim: e.target.value })}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Zostaw puste dla automatycznego"
+                                            />
+                                        </div>
+                                        
+                                        {(modalType === 'create') && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Grupa *
+                                                    </label>
+                                                    <select
+                                                        value={userForm.id_grupa}
+                                                        onChange={(e) => setUserForm({ ...userForm, id_grupa: e.target.value })}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                        required
+                                                    >
+                                                        <option value="">Wybierz grupę...</option>
+                                                        {allGroups.map(group => (
+                                                            <option key={group.id_grupa} value={group.id_grupa}>
+                                                                Grupa #{group.id_grupa} - {group.nazwa_grupy || group.numer_grupy}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Opiekun *
+                                                    </label>
+                                                    <select
+                                                        value={userForm.id_opiekuna}
+                                                        onChange={(e) => setUserForm({ ...userForm, id_opiekuna: e.target.value })}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                        required
+                                                    >
+                                                        <option value="">Wybierz opiekuna...</option>
+                                                        {guardians.map(guardian => (
+                                                            <option key={guardian.id_opiekuna} value={guardian.id_opiekuna}>
+                                                                {guardian.imie} {guardian.nazwisko} ({guardian.email})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
                                 )}
 
                                 {(userForm.rola === 'nauczyciel' || userForm.rola === 'opiekun') && (
@@ -800,6 +891,19 @@ export default function UsersManagement() {
                         </p>
 
                         <form onSubmit={handleSaveGuardianAssignment}>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Wyszukaj opiekuna
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Szukaj po imieniu, nazwisku lub emailu..."
+                                    value={guardianSearchTerm}
+                                    onChange={(e) => setGuardianSearchTerm(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Wybierz opiekuna
@@ -808,20 +912,35 @@ export default function UsersManagement() {
                                     name="guardian_id"
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     required
+                                    size="5"
                                 >
                                     <option value="">Wybierz...</option>
-                                    {guardians.map(guardian => (
-                                        <option key={guardian.id_ucznia} value={guardian.id_ucznia}>
-                                            {guardian.imie} {guardian.nazwisko}
+                                    {guardians.filter(guardian => 
+                                        guardianSearchTerm === '' ||
+                                        `${guardian.imie} ${guardian.nazwisko}`.toLowerCase().includes(guardianSearchTerm.toLowerCase()) ||
+                                        guardian.email?.toLowerCase().includes(guardianSearchTerm.toLowerCase())
+                                    ).map(guardian => (
+                                        <option key={guardian.id_opiekuna} value={guardian.id_opiekuna}>
+                                            {guardian.imie} {guardian.nazwisko} ({guardian.email})
                                         </option>
                                     ))}
                                 </select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Znaleziono: {guardians.filter(guardian => 
+                                        guardianSearchTerm === '' ||
+                                        `${guardian.imie} ${guardian.nazwisko}`.toLowerCase().includes(guardianSearchTerm.toLowerCase()) ||
+                                        guardian.email?.toLowerCase().includes(guardianSearchTerm.toLowerCase())
+                                    ).length} opiekunów
+                                </p>
                             </div>
 
                             <div className="flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setShowAssignModal(false)}
+                                    onClick={() => {
+                                        setShowAssignModal(false);
+                                        setGuardianSearchTerm('');
+                                    }}
                                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                                 >
                                     Anuluj
