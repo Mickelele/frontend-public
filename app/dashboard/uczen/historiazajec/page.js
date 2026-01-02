@@ -11,7 +11,7 @@ export default function HistoriaZajec() {
     const [loading, setLoading] = useState(true);
     const [pastLessons, setPastLessons] = useState([]);
     const [upcomingLessons, setUpcomingLessons] = useState([]);
-    const [activeTab, setActiveTab] = useState('past'); // 'past' or 'upcoming'
+    const [activeTab, setActiveTab] = useState('past');
     const [error, setError] = useState(null);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
@@ -31,7 +31,6 @@ export default function HistoriaZajec() {
             setLoading(true);
             setError(null);
 
-            // 1. Pobierz dane ucznia aby uzyskać id_grupa
             const studentData = await getStudentById(user.id);
             
             if (!studentData?.id_grupa) {
@@ -40,16 +39,12 @@ export default function HistoriaZajec() {
                 return;
             }
 
-            // 2. Pobierz dane grupy (godzina zajęć)
             const groupData = await getGroupById(studentData.id_grupa);
 
-            // 3. Pobierz wszystkie zajęcia dla grupy
             const lessonsData = await getLessonsForGroup(studentData.id_grupa);
             
-            // 4. Pobierz obecności ucznia
             const presenceData = await getPresenceForStudent(user.id);
             
-            // Tworzenie mapy obecności (id_zajec -> czyObecny)
             const presenceMap = {};
             if (presenceData && Array.isArray(presenceData)) {
                 presenceData.forEach(p => {
@@ -57,7 +52,6 @@ export default function HistoriaZajec() {
                 });
             }
 
-            // Przetwarzanie zajęć
             const now = new Date();
             const past = [];
             const upcoming = [];
@@ -68,7 +62,7 @@ export default function HistoriaZajec() {
                     
                     const lessonWithPresence = {
                         ...lesson,
-                        grupa: groupData, // Dodaj pełne dane grupy
+                        grupa: groupData,
                         presence: presenceMap[lesson.id_zajec] !== undefined 
                             ? presenceMap[lesson.id_zajec] 
                             : null
@@ -81,7 +75,6 @@ export default function HistoriaZajec() {
                     }
                 });
 
-                // Sortowanie: przeszłe od najnowszych, nadchodzące od najbliższych
                 past.sort((a, b) => new Date(b.data) - new Date(a.data));
                 upcoming.sort((a, b) => new Date(a.data) - new Date(b.data));
             }
@@ -175,7 +168,6 @@ export default function HistoriaZajec() {
     const stats = calculateAttendanceStats();
     const displayLessons = activeTab === 'past' ? pastLessons : upcomingLessons;
 
-    // Paginacja
     const totalPages = Math.ceil(displayLessons.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -189,13 +181,11 @@ export default function HistoriaZajec() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-6xl mx-auto">
-                {/* Header */}
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">📚 Historia Zajęć</h1>
                     <p className="text-gray-600">Przegląd Twoich zajęć i frekwencji</p>
                 </div>
 
-                {/* Statystyki */}
                 {pastLessons.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div className="bg-white rounded-lg shadow-md p-4">
@@ -217,7 +207,6 @@ export default function HistoriaZajec() {
                     </div>
                 )}
 
-                {/* Tabs */}
                 <div className="bg-white rounded-lg shadow-md mb-6">
                     <div className="flex border-b">
                         <button
@@ -243,7 +232,6 @@ export default function HistoriaZajec() {
                     </div>
                 </div>
 
-                {/* Kontrolki - ilość elementów na stronę */}
                 {displayLessons.length > 0 && (
                     <div className="bg-white rounded-lg shadow-md p-4 mb-6">
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -270,7 +258,6 @@ export default function HistoriaZajec() {
                     </div>
                 )}
 
-                {/* Lista zajęć */}
                 <div className="space-y-4">
                     {displayLessons.length === 0 ? (
                         <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -289,11 +276,9 @@ export default function HistoriaZajec() {
                                     key={lesson.id_zajec}
                                     className="bg-white rounded-lg shadow-md hover:shadow-lg transition"
                                 >
-                                    {/* Główna sekcja */}
                                     <div className="p-6">
                                         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                                             <div className="flex-1">
-                                                {/* Data i godzina */}
                                                 <div className="flex items-start gap-3 mb-4">
                                                     <span className="text-3xl">📅</span>
                                                     <div className="flex-1">
@@ -320,7 +305,6 @@ export default function HistoriaZajec() {
                                                     </div>
                                                 </div>
                                                 
-                                                {/* Temat */}
                                                 {(lesson.temat || lesson.tematZajec) && (
                                                     <div className="mb-3 pl-11">
                                                         <p className="text-sm font-medium text-gray-500 mb-1">📝 Temat zajęć:</p>
@@ -330,7 +314,6 @@ export default function HistoriaZajec() {
                                                     </div>
                                                 )}
                                                 
-                                                {/* Grupa info */}
                                                 {lesson.grupa && (
                                                     <div className="mb-3 pl-11">
                                                         <p className="text-sm text-gray-600">
@@ -340,7 +323,6 @@ export default function HistoriaZajec() {
                                                     </div>
                                                 )}
 
-                                                {/* Uwagi do sprzętu - zawsze widoczne */}
                                                 {lesson.uwaga_do_sprzetu && (
                                                     <div className="mt-4 pl-11">
                                                         <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -352,7 +334,6 @@ export default function HistoriaZajec() {
                                                     </div>
                                                 )}
                                                 
-                                                {/* Notatki od nauczyciela - zawsze widoczne */}
                                                 {lesson.notatki_od_nauczyciela && (
                                                     <div className="mt-4 pl-11">
                                                         <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -365,7 +346,6 @@ export default function HistoriaZajec() {
                                                 )}
                                             </div>
 
-                                            {/* Status obecności */}
                                             {activeTab === 'past' && (
                                                 <div className="lg:ml-6">
                                                     <div className={`
@@ -394,7 +374,6 @@ export default function HistoriaZajec() {
                     )}
                 </div>
 
-                {/* Paginacja */}
                 {totalPages > 1 && (
                     <div className="mt-8 flex justify-center items-center gap-2">
                         <button
@@ -412,7 +391,6 @@ export default function HistoriaZajec() {
                         <div className="flex gap-2">
                             {[...Array(totalPages)].map((_, index) => {
                                 const pageNum = index + 1;
-                                // Pokaż tylko niektóre strony dla lepszej czytelności
                                 if (
                                     pageNum === 1 ||
                                     pageNum === totalPages ||

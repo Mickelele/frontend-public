@@ -8,7 +8,6 @@ export default function PresenceCard({ student, presence }) {
 
     return (
         <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-l-4 border-blue-500">
-            {/* Nagłówek */}
             <div className="mb-6">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {student.user?.imie} {student.user?.nazwisko}
@@ -24,7 +23,6 @@ export default function PresenceCard({ student, presence }) {
                 </div>
             </div>
 
-            {/* Tabela obecności */}
             <div>
                 <h4 className="text-lg font-medium text-gray-700 mb-4">Obecności</h4>
 

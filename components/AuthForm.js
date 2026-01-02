@@ -9,7 +9,6 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer, error:
     const [isLoading, setIsLoading] = useState(false);
     const firstInputRef = useRef(null);
 
-    // Autofocus na pierwsze pole
     useEffect(() => {
         if (firstInputRef.current) {
             firstInputRef.current.focus();

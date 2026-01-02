@@ -1,6 +1,4 @@
-/* Dodatkowe style dla Todo List */
 
-/* Animacje dla zadań */
 @keyframes taskSlideIn {
     from {
         opacity: 0;
@@ -32,7 +30,6 @@
     animation: taskComplete 0.4s ease-in-out;
 }
 
-/* Checkbox z lepszą animacją */
 .task-checkbox {
     transition: all 0.2s ease-in-out;
 }
@@ -41,7 +38,6 @@
     transform: scale(1.1);
 }
 
-/* Priorytet - pulsujące tło dla bardzo wysokiego */
 @keyframes priorityPulse {
     0%, 100% {
         opacity: 1;
@@ -55,7 +51,6 @@
     animation: priorityPulse 2s ease-in-out infinite;
 }
 
-/* Zaległe zadania - delikatne pulsowanie */
 @keyframes overduePulse {
     0%, 100% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
@@ -69,7 +64,6 @@
     animation: overduePulse 2s ease-in-out infinite;
 }
 
-/* Hover na kartach zadań */
 .task-card {
     transition: all 0.2s ease-in-out;
 }
@@ -78,13 +72,11 @@
     transform: translateY(-2px);
 }
 
-/* Modal backdrop z blur */
 .modal-backdrop {
     backdrop-filter: blur(4px);
     transition: all 0.3s ease-in-out;
 }
 
-/* Scrollbar dla listy zadań */
 .task-list::-webkit-scrollbar {
     width: 8px;
 }
@@ -103,7 +95,6 @@
     background: #555;
 }
 
-/* Responsywne ulepszenia */
 @media (max-width: 768px) {
     .todo-container {
         padding: 1rem;
@@ -115,7 +106,6 @@
     }
 }
 
-/* Dark mode ready (opcjonalnie) */
 @media (prefers-color-scheme: dark) {
     .task-card {
         background: #1f2937;

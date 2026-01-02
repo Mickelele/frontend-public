@@ -106,7 +106,7 @@ export default function GradesPage() {
             if (activeTab === 'graded') {
                 return homework.answer && homework.answer.ocena !== null;
             }
-            return true; // 'all'
+            return true; 
         });
     };
 

@@ -46,7 +46,6 @@ export default function TeacherLessonsPage() {
         }
     };
 
-    // Funkcja z danymi demo (tylko do testów) - pozostaje bez zmian
     const getDemoLessons = () => {
         const baseDate = new Date();
         const demoLessons = [
@@ -150,7 +149,6 @@ export default function TeacherLessonsPage() {
     const handleMouseEnter = (lesson, event) => {
         setHoveredLesson(lesson.id_zajec);
 
-        // Oblicz pozycję tooltipa względem viewport
         const rect = event.currentTarget.getBoundingClientRect();
         setTooltipPosition({
             top: rect.bottom + window.scrollY + 5,
@@ -158,7 +156,6 @@ export default function TeacherLessonsPage() {
         });
     };
 
-    // Reszta funkcji pozostaje bez zmian
     const changeMonth = (increment) => {
         const newDate = new Date(selectedDate);
         newDate.setMonth(newDate.getMonth() + increment);
@@ -199,7 +196,6 @@ export default function TeacherLessonsPage() {
         return date.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
     };
 
-    // Grupowanie lekcji według daty
     const groupedLessons = lessons.reduce((acc, lesson) => {
         const date = lesson.data;
         if (!acc[date]) {
@@ -209,13 +205,11 @@ export default function TeacherLessonsPage() {
         return acc;
     }, {});
 
-    // Sortowanie dat
     const sortedDates = Object.keys(groupedLessons).sort();
 
     return (
         <div className="min-h-screen bg-gray-50 p-4">
             <div className="max-w-7xl mx-auto">
-                {/* Nagłówek z nawigacją miesiącami */}
                 <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-xl font-bold text-gray-800">Moje lekcje</h1>
@@ -240,7 +234,6 @@ export default function TeacherLessonsPage() {
                         </div>
                     </div>
 
-                    {/* Statystyki */}
                     <div className="grid grid-cols-3 gap-2">
                         <div className="bg-blue-50 border border-blue-200 rounded p-2 text-center">
                             <div className="text-blue-600 text-xs font-medium">Wszystkie</div>
@@ -261,7 +254,6 @@ export default function TeacherLessonsPage() {
                     </div>
                 </div>
 
-                {/* Komunikat o błędzie */}
                 {error && (
                     <div className={`border px-3 py-2 rounded mb-4 text-sm ${
                         error.includes('demo')
@@ -272,7 +264,6 @@ export default function TeacherLessonsPage() {
                     </div>
                 )}
 
-                {/* Ładowanie */}
                 {loading && (
                     <div className="text-center py-6">
                         <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -280,7 +271,6 @@ export default function TeacherLessonsPage() {
                     </div>
                 )}
 
-                {/* Lista lekcji */}
                 {!loading && sortedDates.length === 0 && !error && (
                     <div className="bg-white rounded-lg shadow-sm p-6 text-center">
                         <p className="text-gray-500">Brak lekcji w wybranym miesiącu</p>
@@ -289,7 +279,6 @@ export default function TeacherLessonsPage() {
 
                 {!loading && sortedDates.length > 0 && (
                     <div className="space-y-4 relative">
-                        {/* Globalny tooltip */}
                         {hoveredLesson && (
                             <div
                                 className="fixed bg-white border border-gray-300 rounded shadow-lg p-3 z-50 min-w-[200px] pointer-events-none"
@@ -363,7 +352,7 @@ export default function TeacherLessonsPage() {
                             </div>
                         )}
 
-                        {/* Lista lekcji */}
+
                         {sortedDates.map(date => (
                             <div key={date} className="bg-white rounded-lg shadow-sm overflow-hidden">
                                 <div className={`px-4 py-3 ${
@@ -400,9 +389,7 @@ export default function TeacherLessonsPage() {
                                                     onMouseEnter={(e) => handleMouseEnter(lesson, e)}
                                                     onMouseLeave={() => setHoveredLesson(null)}
                                                 >
-                                                    {/* Podstawowe informacje - bardzo kompaktowe */}
                                                     <div className="text-center">
-                                                        {/* ID grupy na górze */}
                                                         <div className="text-xs font-bold text-gray-800 mb-1">
                                                             Grupa #{lesson.grupa.id_grupa}
                                                         </div>

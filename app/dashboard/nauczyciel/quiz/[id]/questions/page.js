@@ -23,7 +23,6 @@ export default function QuizQuestionsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // Stan dla formularzy
     const [showQuestionForm, setShowQuestionForm] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
     const [questionFormData, setQuestionFormData] = useState({

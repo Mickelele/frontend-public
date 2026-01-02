@@ -1,4 +1,3 @@
-// components/Navbar.js
 'use client';
 import Link from 'next/link';
 import { useAuth } from '/context/AuthContext';
@@ -60,7 +59,6 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
                             </span>
                         </div>
 
-                        {/* Przycisk hamburger menu */}
                         <button
                             onClick={toggleSidebar}
                             className="p-2 rounded-lg hover:bg-gray-100 transition"

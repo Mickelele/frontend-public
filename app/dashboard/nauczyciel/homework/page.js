@@ -447,7 +447,6 @@ export default function TeacherHomeworkPage() {
                     </div>
                 )}
 
-                {/* Modal do dodawania zadania */}
                 {homeworkModal.visible && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
@@ -530,7 +529,7 @@ export default function TeacherHomeworkPage() {
                     </div>
                 )}
 
-                {/* Modal do oceniania odpowiedzi */}
+            
                 {gradeModal.visible && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
