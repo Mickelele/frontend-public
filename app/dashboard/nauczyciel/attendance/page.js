@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getMyCourses, addComment } from "../../../../lib/api/course.api";
 import { getUserIdFromToken } from "../../../../lib/auth";
 import { setPresence, createPresence, deletePresence } from "../../../../lib/api/presence.api";
 import { updateEquipmentRemark } from "../../../../lib/api/lesson.api";
+import { getAllQuizzes, updateQuiz } from "../../../../lib/api/quiz.api";
 
 export default function TeacherCoursesPage() {
+    const router = useRouter();
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedDay, setSelectedDay] = useState("");
@@ -31,6 +34,15 @@ export default function TeacherCoursesPage() {
         visible: false,
         zajecie: null,
         tresc: ""
+    });
+
+    const [quizModal, setQuizModal] = useState({
+        visible: false,
+        zajecie: null,
+        quizzes: [],
+        filteredQuizzes: [],
+        searchTerm: "",
+        loading: false
     });
 
     const handleEquipmentRemarkSubmit = async () => {
@@ -73,6 +85,77 @@ export default function TeacherCoursesPage() {
             zajecie: null,
             tresc: ""
         });
+    };
+
+    const openQuizModal = async (zajecie) => {
+        setQuizModal({
+            visible: true,
+            zajecie,
+            quizzes: [],
+            filteredQuizzes: [],
+            searchTerm: "",
+            loading: true
+        });
+
+        try {
+            const quizzes = await getAllQuizzes();
+            setQuizModal(prev => ({
+                ...prev,
+                quizzes,
+                filteredQuizzes: quizzes,
+                loading: false
+            }));
+        } catch (err) {
+            console.error("Błąd ładowania quizów:", err);
+            alert("Nie udało się załadować quizów");
+            closeQuizModal();
+        }
+    };
+
+    const closeQuizModal = () => {
+        setQuizModal({
+            visible: false,
+            zajecie: null,
+            quizzes: [],
+            filteredQuizzes: [],
+            searchTerm: "",
+            loading: false
+        });
+    };
+
+    const handleQuizSearch = (searchTerm) => {
+        setQuizModal(prev => ({
+            ...prev,
+            searchTerm,
+            filteredQuizzes: prev.quizzes.filter(quiz =>
+                quiz.nazwa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                quiz.opis?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+        }));
+    };
+
+    const handleAssignQuiz = async (quiz) => {
+        if (!confirm(`Czy na pewno chcesz przypisać quiz "${quiz.nazwa}" do tych zajęć?`)) {
+            return;
+        }
+
+        try {
+            setUpdating(true);
+            
+            await updateQuiz(quiz.id_quizu, {
+                nazwa: quiz.nazwa,
+                opis: quiz.opis,
+                Zajecia_id_zajec: quizModal.zajecie.id_zajec
+            });
+
+            alert("Quiz został przypisany do zajęć!");
+            closeQuizModal();
+        } catch (err) {
+            console.error("Błąd przypisywania quizu:", err);
+            alert("Nie udało się przypisać quizu");
+        } finally {
+            setUpdating(false);
+        }
     };
 
     const dniTygodnia = [
@@ -432,6 +515,8 @@ export default function TeacherCoursesPage() {
                                             openRemarkModal={openRemarkModal}
                                             openEquipmentRemarkModal={openEquipmentRemarkModal}
                                             getStudentFullName={getStudentFullName}
+                                            router={router}
+                                            openQuizModal={openQuizModal}
                                         />
                                     ))}
                                 </div>
@@ -615,6 +700,88 @@ export default function TeacherCoursesPage() {
                         </div>
                     </div>
                 )}
+
+                {quizModal.visible && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+                            <div className="p-6 border-b">
+                                <h3 className="text-lg font-bold text-gray-800 mb-2">
+                                    Przypisz quiz do zajęć
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                    Zajęcia: <strong>{getNazwaZajec(quizModal.zajecie)}</strong><br />
+                                    Data: <strong>{formatDate(quizModal.zajecie?.data)}</strong>
+                                </p>
+                            </div>
+
+                            <div className="p-6 border-b">
+                                <input
+                                    type="text"
+                                    placeholder="🔍 Szukaj quizu po nazwie lub opisie..."
+                                    value={quizModal.searchTerm}
+                                    onChange={(e) => handleQuizSearch(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6">
+                                {quizModal.loading ? (
+                                    <div className="text-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                                        <p className="mt-2 text-gray-600">Ładowanie quizów...</p>
+                                    </div>
+                                ) : quizModal.filteredQuizzes.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        {quizModal.searchTerm 
+                                            ? `Nie znaleziono quizów pasujących do "${quizModal.searchTerm}"`
+                                            : "Brak dostępnych quizów. Utwórz pierwszy quiz!"}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {quizModal.filteredQuizzes.map((quiz) => (
+                                            <div
+                                                key={quiz.id_quizu}
+                                                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <h4 className="font-semibold text-gray-800">{quiz.nazwa}</h4>
+                                                        {quiz.opis && (
+                                                            <p className="text-sm text-gray-600 mt-1">{quiz.opis}</p>
+                                                        )}
+                                                        {quiz.Zajecia_id_zajec === quizModal.zajecie.id_zajec && (
+                                                            <p className="text-xs text-green-600 mt-2">
+                                                                ✓ Już przypisany do tych zajęć
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {quiz.Zajecia_id_zajec !== quizModal.zajecie.id_zajec && (
+                                                        <button
+                                                            onClick={() => handleAssignQuiz(quiz)}
+                                                            disabled={updating}
+                                                            className="ml-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:bg-purple-300 transition-colors text-sm font-medium whitespace-nowrap"
+                                                        >
+                                                            {updating ? "..." : "Przypisz"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6 border-t bg-gray-50">
+                                <button
+                                    onClick={closeQuizModal}
+                                    className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                >
+                                    Zamknij
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -643,7 +810,9 @@ function GroupSection({
                           openPresenceMenu,
                           openRemarkModal,
                           openEquipmentRemarkModal,
-                          getStudentFullName
+                          getStudentFullName,
+                          router,
+                          openQuizModal
                       }) {
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -695,6 +864,8 @@ function GroupSection({
                             openRemarkModal={openRemarkModal}
                             openEquipmentRemarkModal={openEquipmentRemarkModal}
                             getStudentFullName={getStudentFullName}
+                            router={router}
+                            openQuizModal={openQuizModal}
                         />
                     )}
                 </div>
@@ -714,7 +885,9 @@ function AttendanceMatrix({
                               openPresenceMenu,
                               openRemarkModal,
                               openEquipmentRemarkModal,
-                              getStudentFullName
+                              getStudentFullName,
+                              router,
+                              openQuizModal
                           }) {
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -749,6 +922,13 @@ function AttendanceMatrix({
                                         title="Dodaj uwagę do sprzętu"
                                     >
                                         Sprzęt
+                                    </button>
+                                    <button
+                                        onClick={() => openQuizModal(zajecie)}
+                                        className="text-xs text-purple-500 hover:text-purple-700 mt-1 underline font-medium"
+                                        title="Przypisz quiz do tych zajęć"
+                                    >
+                                        + Dodaj quiz
                                     </button>
                                 </div>
                             </th>

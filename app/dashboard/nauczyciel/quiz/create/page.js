@@ -1,17 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createQuiz } from '../../../../../lib/api/quiz.api';
 
 export default function CreateQuizPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [formData, setFormData] = useState({
         nazwa: '',
-        opis: ''
+        opis: '',
+        Zajecia_id_zajec: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const zajeciaId = searchParams.get('zajecia_id');
+        if (zajeciaId) {
+            setFormData(prev => ({
+                ...prev,
+                Zajecia_id_zajec: zajeciaId
+            }));
+        }
+    }, [searchParams]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -36,7 +48,7 @@ export default function CreateQuizPage() {
             const quizData = {
                 nazwa: formData.nazwa,
                 opis: formData.opis,
-                Zajecia_id_zajec: null
+                Zajecia_id_zajec: formData.Zajecia_id_zajec ? parseInt(formData.Zajecia_id_zajec) : null
             };
 
             await createQuiz(quizData);
@@ -61,6 +73,14 @@ export default function CreateQuizPage() {
                 )}
 
                 <form onSubmit={handleSubmit}>
+                    {formData.Zajecia_id_zajec && (
+                        <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                            <p className="text-sm text-purple-800">
+                                📝 Quiz zostanie przypisany do zajęć (ID: {formData.Zajecia_id_zajec})
+                            </p>
+                        </div>
+                    )}
+
                     <div className="mb-4">
                         <label htmlFor="nazwa" className="block text-gray-700 font-semibold mb-2">
                             Nazwa Quizu *
