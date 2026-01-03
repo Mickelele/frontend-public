@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getMyCourses, addComment } from "../../../../lib/api/course.api";
+import { getMyCourses, addComment, getCourseById } from "../../../../lib/api/course.api";
 import { getUserIdFromToken } from "../../../../lib/auth";
-import { setPresence, createPresence, deletePresence } from "../../../../lib/api/presence.api";
+import { setPresence, createPresence, deletePresence, getPresenceForStudent } from "../../../../lib/api/presence.api";
 import { updateEquipmentRemark } from "../../../../lib/api/lesson.api";
 import { getAllQuizzes, updateQuiz } from "../../../../lib/api/quiz.api";
+import { getSubstitutesByTeacherReporting, getSubstitutesByTeacherSubstituting } from "../../../../lib/api/substitute.api";
+import { getGroupById, getGroupStudents } from "../../../../lib/api/group.api";
+import { getUserById } from "../../../../lib/api/users.api";
 
 export default function TeacherCoursesPage() {
     const router = useRouter();
@@ -15,6 +18,10 @@ export default function TeacherCoursesPage() {
     const [selectedDay, setSelectedDay] = useState("");
     const [expandedGroups, setExpandedGroups] = useState(new Set());
     const [updating, setUpdating] = useState(false);
+    const [mySubstitutesReporting, setMySubstitutesReporting] = useState([]);
+    const [mySubstitutesTaken, setMySubstitutesTaken] = useState([]);
+    const [substituteLessons, setSubstituteLessons] = useState([]);
+    const [substitutesExpanded, setSubstitutesExpanded] = useState(true);
     const [presenceMenu, setPresenceMenu] = useState({
         visible: false,
         x: 0,
@@ -168,6 +175,16 @@ export default function TeacherCoursesPage() {
         "Niedziela"
     ];
 
+    function getSubstituteForLesson(lessonId) {
+        if (!mySubstitutesReporting || !Array.isArray(mySubstitutesReporting)) return null;
+        return mySubstitutesReporting.find(sub => sub.zajecia_id_zajec === lessonId || sub.zajecia?.id_zajec === lessonId);
+    }
+
+    function isLessonTakenByMe(lessonId) {
+        if (!mySubstitutesTaken || !Array.isArray(mySubstitutesTaken)) return false;
+        return mySubstitutesTaken.some(sub => sub.zajecia_id_zajec === lessonId || sub.zajecia?.id_zajec === lessonId);
+    }
+
     useEffect(() => {
         const teacherId = getUserIdFromToken();
         if (!teacherId) {
@@ -176,18 +193,239 @@ export default function TeacherCoursesPage() {
             return;
         }
 
-        loadCourses(selectedDay);
+        async function loadData() {
+            await loadSubstitutes();
+            await loadCourses(selectedDay);
+        }
+        
+        loadData();
     }, [selectedDay]);
 
     async function loadCourses(dzien) {
         try {
             setLoading(true);
             const kursy = await getMyCourses(dzien);
-            setCourses(kursy || []);
+            
+            const coursesWithUsers = await Promise.all(
+                (kursy || []).map(async (course) => {
+                    const groupsWithUsers = await Promise.all(
+                        (course.grupy || []).map(async (grupa) => {
+                            const needsUserData = grupa.uczniowie?.some(s => !s.uzytkownik);
+                            
+                            if (needsUserData && grupa.uczniowie) {
+                                const studentsWithUsers = await Promise.all(
+                                    grupa.uczniowie.map(async (student) => {
+                                        if (student.uzytkownik) return student;
+                                        
+                                        try {
+                                            const user = await getUserById(student.id_ucznia);
+                                            return {
+                                                ...student,
+                                                uzytkownik: user
+                                            };
+                                        } catch (err) {
+                                            console.error(`Błąd pobierania użytkownika ${student.id_ucznia}:`, err);
+                                            return student;
+                                        }
+                                    })
+                                );
+                                
+                                return {
+                                    ...grupa,
+                                    uczniowie: studentsWithUsers,
+                                    zajecia: (grupa.zajecia || []).sort((a, b) => new Date(a.data) - new Date(b.data))
+                                };
+                            }
+                            
+                            return {
+                                ...grupa,
+                                zajecia: (grupa.zajecia || []).sort((a, b) => new Date(a.data) - new Date(b.data))
+                            };
+                        })
+                    );
+                    
+                    return {
+                        ...course,
+                        grupy: groupsWithUsers
+                    };
+                })
+            );
+            
+            // Dodaj zajęcia z zastępstw do odpowiednich kursów i grup
+            const coursesWithSubstitutes = await addSubstituteLessonsToCourses(coursesWithUsers);
+            
+            setCourses(coursesWithSubstitutes);
         } catch (err) {
             console.error("Błąd przy ładowaniu kursów:", err);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function addSubstituteLessonsToCourses(courses) {
+        if (!substituteLessons || substituteLessons.length === 0) {
+            return courses;
+        }
+
+        const coursesMap = new Map(courses.map(c => [c.id_kursu, { ...c, grupy: c.grupy.map(g => ({ ...g, zajecia: [...(g.zajecia || [])] })) }]));
+
+        for (const subLesson of substituteLessons) {
+            const grupaId = subLesson.id_grupy;
+            
+           
+            let foundGroup = null;
+            let foundCourse = null;
+            
+            for (const course of coursesMap.values()) {
+                const grupa = course.grupy.find(g => g.id_grupa === grupaId);
+                if (grupa) {
+                    foundGroup = grupa;
+                    foundCourse = course;
+                    break;
+                }
+            }
+
+            if (!foundGroup) {
+                try {
+                    const grupaData = await getGroupById(grupaId);
+                    if (!grupaData || !grupaData.id_kursu) continue;
+
+                    let course = coursesMap.get(grupaData.id_kursu);
+                    
+                    if (!course) {
+                        const courseData = await getCourseById(grupaData.id_kursu);
+                        if (!courseData) continue;
+                        
+                        course = {
+                            ...courseData,
+                            grupy: []
+                        };
+                        coursesMap.set(courseData.id_kursu, course);
+                    }
+
+                    foundGroup = course.grupy.find(g => g.id_grupa === grupaId);
+                    if (!foundGroup) {
+                        foundGroup = {
+                            ...grupaData,
+                            uczniowie: subLesson.uczniowie || [],
+                            zajecia: []
+                        };
+                        course.grupy.push(foundGroup);
+                    }
+                } catch (err) {
+                    console.error(`Błąd pobierania grupy/kursu dla grupy ${grupaId}:`, err);
+                    continue;
+                }
+            }
+
+            if (foundGroup) {
+                const exists = foundGroup.zajecia.some(z => z.id_zajec === subLesson.id_zajec);
+                if (!exists) {
+                    foundGroup.zajecia.push({
+                        ...subLesson,
+                        isSubstituteLesson: true
+                    });
+                    foundGroup.zajecia.sort((a, b) => new Date(a.data) - new Date(b.data));
+                }
+            }
+        }
+
+        return Array.from(coursesMap.values());
+    }
+
+    async function loadSubstitutes() {
+        try {
+            const teacherId = getUserIdFromToken();
+            const [reporting, taken] = await Promise.all([
+                getSubstitutesByTeacherReporting(teacherId),
+                getSubstitutesByTeacherSubstituting(teacherId)
+            ]);
+            setMySubstitutesReporting(reporting || []);
+            setMySubstitutesTaken(taken || []);
+            
+            if (taken && taken.length > 0) {
+                await loadCoursesForSubstitutes(taken);
+            }
+        } catch (err) {
+            console.error("Błąd przy ładowaniu zastępstw:", err);
+        }
+    }
+
+    async function loadCoursesForSubstitutes(takenSubstitutes) {
+        if (!takenSubstitutes || takenSubstitutes.length === 0) {
+            return;
+        }
+
+        try {
+           
+            const lessonsWithStudents = await Promise.all(
+                takenSubstitutes.map(async (sub) => {
+                    if (!sub.zajecia) return null;
+                    
+                    const lesson = sub.zajecia;
+                    const grupaId = lesson.id_grupy;
+                    
+                    try {
+                        const students = await getGroupStudents(grupaId);
+                        
+                   
+                        const studentsWithUsers = await Promise.all(
+                            (students || []).map(async (student) => {
+                                try {
+                                    const user = await getUserById(student.id_ucznia);
+                                    return {
+                                        ...student,
+                                        uzytkownik: user
+                                    };
+                                } catch (err) {
+                                    console.error(`Błąd pobierania użytkownika ${student.id_ucznia}:`, err);
+                                    return student;
+                                }
+                            })
+                        );
+                        
+                       
+                        const allPresences = await Promise.all(
+                            studentsWithUsers.map(async (student) => {
+                                try {
+                                    const presences = await getPresenceForStudent(student.id_ucznia);
+                                    return presences || [];
+                                } catch (err) {
+                                    console.error(`Błąd pobierania obecności dla ucznia ${student.id_ucznia}:`, err);
+                                    return [];
+                                }
+                            })
+                        );
+                        
+                       
+                        const lessonPresences = allPresences
+                            .flat()
+                            .filter(p => p.id_zajec === lesson.id_zajec);
+                        
+                        return {
+                            ...lesson,
+                            uczniowie: studentsWithUsers,
+                            obecnosci: lessonPresences,
+                            id_zastepstwa: sub.id_zastepstwa
+                        };
+                    } catch (err) {
+                        console.error(`Błąd pobierania studentów dla grupy ${grupaId}:`, err);
+                        return {
+                            ...lesson,
+                            uczniowie: [],
+                            obecnosci: [],
+                            id_zastepstwa: sub.id_zastepstwa
+                        };
+                    }
+                })
+            );
+            
+           
+            const validLessons = lessonsWithStudents.filter(Boolean);
+            setSubstituteLessons(validLessons);
+            
+        } catch (error) {
+            console.error("Błąd podczas ładowania zajęć z zastępstw:", error);
         }
     }
 
@@ -224,7 +462,7 @@ export default function TeacherCoursesPage() {
         s === null ? "text-gray-600" : s ? "text-green-600" : "text-red-600";
 
     const getStudentFullName = (student) => {
-        return `${student.imie} ${student.nazwisko}`;
+        return `${student.uzytkownik?.imie || ''} ${student.uzytkownik?.nazwisko || ''}`.trim() || 'Brak danych';
     };
 
     const isStudentPresent = (zajecie, studentId) => {
@@ -334,9 +572,45 @@ export default function TeacherCoursesPage() {
                             }
                         }
                         return zajecie;
-                    })
+                    }).sort((a, b) => new Date(a.data) - new Date(b.data))
                 }))
             }))
+        );
+        
+       
+        setSubstituteLessons(prevLessons =>
+            prevLessons.map(lesson => {
+                if (lesson.id_zajec === zajecieId) {
+                    const existingObecnosc = lesson.obecnosci?.find(o => o.id_ucznia === studentId);
+
+                    if (value === null) {
+                        const updatedObecnosci = lesson.obecnosci?.filter(o => o.id_ucznia !== studentId) || [];
+                        return {
+                            ...lesson,
+                            obecnosci: updatedObecnosci
+                        };
+                    } else {
+                        const newObecnosc = {
+                            id_obecnosci: existingObecnosc?.id_obecnosci || `temp-${Date.now()}`,
+                            id_ucznia: studentId,
+                            id_zajec: zajecieId,
+                            czyObecny: value ? 1 : 0
+                        };
+
+                        const updatedObecnosci = existingObecnosc
+                            ? lesson.obecnosci?.map(o =>
+                                o.id_ucznia === studentId ? newObecnosc : o
+                            ) || []
+                            : [...(lesson.obecnosci || []), newObecnosc];
+
+                        return {
+                            ...lesson,
+                            obecnosci: updatedObecnosci
+                        };
+                    }
+                }
+                return lesson;
+            })
         );
     };
 
@@ -374,10 +648,13 @@ export default function TeacherCoursesPage() {
 
             if (apiCall) {
                 apiCall
-                    .then(result => {
+                    .then(async result => {
+                        // Nie odświeżamy - optymistyczna aktualizacja już zadziałała
                     })
-                    .catch(error => {
-                        loadCourses(selectedDay);
+                    .catch(async error => {
+                        // W przypadku błędu odśwież wszystko
+                        await loadCourses(selectedDay);
+                        await loadSubstitutes();
                     });
             }
 
@@ -517,6 +794,8 @@ export default function TeacherCoursesPage() {
                                             getStudentFullName={getStudentFullName}
                                             router={router}
                                             openQuizModal={openQuizModal}
+                                            mySubstitutesReporting={mySubstitutesReporting}
+                                            mySubstitutesTaken={mySubstitutesTaken}
                                         />
                                     ))}
                                 </div>
@@ -524,6 +803,137 @@ export default function TeacherCoursesPage() {
                         ))}
                     </div>
                 )}
+
+                {/* Sekcja zajęć z zastępstw */}
+                {substituteLessons.length > 0 && (() => {
+                    // Filtruj zajęcia: max 2 dni wstecz od dzisiaj
+                    const twoDaysAgo = new Date();
+                    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                    twoDaysAgo.setHours(0, 0, 0, 0);
+                    
+                    const filteredLessons = substituteLessons.filter(lesson => {
+                        const lessonDate = new Date(lesson.data);
+                        return lessonDate >= twoDaysAgo;
+                    });
+                    
+                    if (filteredLessons.length === 0) return null;
+                    
+                    return (
+                        <div className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg shadow-lg overflow-hidden border-2 border-green-200">
+                            <div 
+                                className="bg-green-100 px-6 py-4 border-b border-green-200 cursor-pointer hover:bg-green-150 transition-colors"
+                                onClick={() => setSubstitutesExpanded(!substitutesExpanded)}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">✅</span>
+                                        <h2 className="text-xl font-bold text-gray-800">
+                                            Twoje zastępstwa
+                                        </h2>
+                                        <span className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                            {filteredLessons.length} {filteredLessons.length === 1 ? 'zajęcia' : 'zajęć'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-gray-600 text-sm">
+                                            Zajęcia, które prowadzisz jako zastępstwo
+                                        </span>
+                                        <svg 
+                                            className={`w-6 h-6 text-gray-600 transition-transform ${substitutesExpanded ? 'rotate-180' : ''}`}
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {substitutesExpanded && (
+                                <div className="p-6 space-y-6">
+                                    {filteredLessons.map(lesson => (
+                                <div key={lesson.id_zajec} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                                    <div className="mb-4 flex justify-between items-start">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-800">
+                                                {lesson.tematZajec || 'Zajęcia'}
+                                            </h3>
+                                            <p className="text-gray-600 text-sm mt-1">
+                                                Data: {formatDate(lesson.data)} | Godzina: {formatTime(lesson.godzina)} | Grupa {lesson.id_grupy}
+                                            </p>
+                                        </div>
+                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                            ZASTĘPSTWO
+                                        </span>
+                                    </div>
+
+                                    {lesson.uczniowie && lesson.uczniowie.length > 0 ? (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="border-b border-gray-200">
+                                                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Uczeń</th>
+                                                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Obecność</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {lesson.uczniowie.map((student, idx) => {
+                                                        const status = getStudentPresence(lesson, student.id_ucznia);
+                                                        const obecnosc = lesson.obecnosci?.find(o => o.id_ucznia === student.id_ucznia);
+                                                        
+                                                        return (
+                                                            <tr key={student.id_ucznia} className={idx % 2 ? "bg-gray-50" : "bg-white"}>
+                                                                <td className="py-3 px-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                                            <span className="text-blue-600 text-sm font-medium">
+                                                                                {student.uzytkownik?.imie?.charAt(0).toUpperCase() || '?'}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="font-medium text-gray-900">
+                                                                                {getStudentFullName(student)}
+                                                                            </div>
+                                                                            <div className="text-xs text-gray-500">
+                                                                                Punkty: {student.saldo_punktow}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-3 px-4 text-center">
+                                                                    <div
+                                                                        onClick={(e) => openPresenceMenu(e, obecnosc, lesson.id_zajec, student.id_ucznia)}
+                                                                        className={`w-10 h-10 rounded border-2 flex items-center justify-center mx-auto cursor-pointer transition-all hover:scale-110 ${
+                                                                            status === null
+                                                                                ? "border-gray-300 bg-gray-100 hover:bg-gray-200"
+                                                                                : status
+                                                                                ? "border-green-500 bg-green-50 hover:bg-green-100"
+                                                                                : "border-red-500 bg-red-50 hover:bg-red-100"
+                                                                        }`}
+                                                                        title={`Kliknij aby zmienić obecność dla ${getStudentFullName(student)}`}
+                                                                    >
+                                                                        <span className={`font-bold text-lg ${getPresenceTextColor(status)}`}>
+                                                                            {getPresenceText(status)}
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500 text-center py-4">Brak uczniów w grupie</p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    </div>
+                    );
+                })()}
 
                 {presenceMenu.visible && (
                     <div
@@ -812,7 +1222,9 @@ function GroupSection({
                           openEquipmentRemarkModal,
                           getStudentFullName,
                           router,
-                          openQuizModal
+                          openQuizModal,
+                          mySubstitutesReporting,
+                          mySubstitutesTaken
                       }) {
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -866,6 +1278,8 @@ function GroupSection({
                             getStudentFullName={getStudentFullName}
                             router={router}
                             openQuizModal={openQuizModal}
+                            mySubstitutesReporting={mySubstitutesReporting}
+                            mySubstitutesTaken={mySubstitutesTaken}
                         />
                     )}
                 </div>
@@ -887,7 +1301,9 @@ function AttendanceMatrix({
                               openEquipmentRemarkModal,
                               getStudentFullName,
                               router,
-                              openQuizModal
+                              openQuizModal,
+                              mySubstitutesReporting,
+                              mySubstitutesTaken
                           }) {
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -899,16 +1315,37 @@ function AttendanceMatrix({
                             Uczeń
                         </th>
 
-                        {grupa.zajecia.map((zajecie, index) => (
-                            <th key={zajecie.id_zajec} className="px-3 py-2 text-center border-b min-w-[120px]">
+                        {grupa.zajecia.map((zajecie, index) => {
+                            const substitute = mySubstitutesReporting?.find(sub => 
+                                sub.zajecia_id_zajec === zajecie.id_zajec || sub.zajecia?.id_zajec === zajecie.id_zajec
+                            );
+                            const isTakenByMe = zajecie.isSubstituteLesson || mySubstitutesTaken?.some(sub => 
+                                sub.zajecia_id_zajec === zajecie.id_zajec || sub.zajecia?.id_zajec === zajecie.id_zajec
+                            );
+                            const hasSubstitute = substitute && substitute.id_nauczyciel_zastepujacy;
+                            
+                            return (
+                            <th key={zajecie.id_zajec} className={`px-3 py-2 text-center border-b min-w-[120px] ${hasSubstitute ? 'bg-red-50' : isTakenByMe ? 'bg-green-50' : ''}`}>
                                 <div className="flex flex-col items-center">
                                     <span className="font-semibold text-sm">{index + 1}.</span>
+                                    {hasSubstitute && (
+                                        <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded mb-1">
+                                            🔄 ZASTĘPSTWO
+                                        </span>
+                                    )}
+                                    {isTakenByMe && (
+                                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded mb-1">
+                                            ✅ TWOJE ZASTĘPSTWO
+                                        </span>
+                                    )}
                                     <span className="text-xs text-gray-500 mt-1">
                                         {formatDate(zajecie.data)}
                                     </span>
                                     <span className="text-xs text-gray-400 mt-1 truncate max-w-[100px]" title={getNazwaZajec(zajecie)}>
                                         {getNazwaZajec(zajecie)}
                                     </span>
+                                    {!hasSubstitute && (
+                                        <>
                                     <button
                                         onClick={() => openRemarkModal(zajecie)}
                                         className="text-xs text-blue-500 hover:text-blue-700 mt-1 underline"
@@ -930,9 +1367,12 @@ function AttendanceMatrix({
                                     >
                                         + Dodaj quiz
                                     </button>
+                                        </>
+                                    )}
                                 </div>
                             </th>
-                        ))}
+                            );
+                        })}
                     </tr>
                     </thead>
 
@@ -944,7 +1384,7 @@ function AttendanceMatrix({
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                                             <span className="text-blue-600 text-sm font-medium">
-                                                {student.imie?.charAt(0).toUpperCase()}
+                                                {student.uzytkownik?.imie?.charAt(0).toUpperCase() || '?'}
                                             </span>
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -961,9 +1401,23 @@ function AttendanceMatrix({
                                 {grupa.zajecia.map(zajecie => {
                                     const status = getStudentPresence(zajecie, student.id_ucznia);
                                     const obecnosc = zajecie.obecnosci?.find(o => o.id_ucznia === student.id_ucznia);
+                                    const substitute = mySubstitutesReporting?.find(sub => 
+                                        sub.zajecia_id_zajec === zajecie.id_zajec || sub.zajecia?.id_zajec === zajecie.id_zajec
+                                    );
+                                    const hasSubstitute = substitute && substitute.id_nauczyciel_zastepujacy;
+                                    const isTakenByMe = zajecie.isSubstituteLesson || mySubstitutesTaken?.some(sub => 
+                                        sub.zajecia_id_zajec === zajecie.id_zajec || sub.zajecia?.id_zajec === zajecie.id_zajec
+                                    );
+                                    const isBlocked = hasSubstitute && !isTakenByMe;
 
                                     return (
                                         <td key={`${student.id_ucznia}-${zajecie.id_zajec}`} className="px-2 py-2 text-center border-b">
+                                            {isBlocked ? (
+                                                <div className="w-8 h-8 rounded border-2 border-gray-300 bg-gray-100 flex items-center justify-center mx-auto"
+                                                     title="Zajęcia mają zastępstwo - nie możesz edytować obecności">
+                                                    <span className="text-gray-400 text-xs">🔒</span>
+                                                </div>
+                                            ) : (
                                             <div
                                                 onClick={(e) => openPresenceMenu(e, obecnosc, zajecie.id_zajec, student.id_ucznia)}
                                                 className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto transition-all hover:scale-110 ${getPresenceColor(status)}`}
@@ -973,6 +1427,7 @@ function AttendanceMatrix({
                                                     {getPresenceText(status)}
                                                 </span>
                                             </div>
+                                            )}
                                         </td>
                                     );
                                 })}

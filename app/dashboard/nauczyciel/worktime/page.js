@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '/context/AuthContext';
 import { getTeacherLessonsForMonth } from '/lib/api/lesson.api';
+import { getSubstitutesByTeacherReporting, getSubstitutesByTeacherSubstituting } from '/lib/api/substitute.api';
+import { getGroupById } from '/lib/api/group.api';
 
 export default function TeacherLessonsPage() {
     const { user } = useAuth();
@@ -11,15 +13,38 @@ export default function TeacherLessonsPage() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [hoveredLesson, setHoveredLesson] = useState(null);
     const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+    const [mySubstitutesReporting, setMySubstitutesReporting] = useState([]);
+    const [mySubstitutesTaken, setMySubstitutesTaken] = useState([]);
 
     const currentYear = selectedDate.getFullYear();
     const currentMonth = selectedDate.getMonth() + 1;
 
     useEffect(() => {
         if (user && user.id) {
+            fetchSubstitutes();
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (user && user.id) {
             fetchLessons();
         }
-    }, [selectedDate, user]);
+    }, [selectedDate, user, mySubstitutesTaken]);
+
+    const fetchSubstitutes = async () => {
+        if (!user || !user.id) return;
+        
+        try {
+            const [reporting, taken] = await Promise.all([
+                getSubstitutesByTeacherReporting(user.id),
+                getSubstitutesByTeacherSubstituting(user.id)
+            ]);
+            setMySubstitutesReporting(reporting || []);
+            setMySubstitutesTaken(taken || []);
+        } catch (error) {
+            console.error('Błąd pobierania zastępstw:', error);
+        }
+    };
 
     const fetchLessons = async () => {
         if (!user || !user.id) {
@@ -32,7 +57,37 @@ export default function TeacherLessonsPage() {
 
         try {
             const data = await getTeacherLessonsForMonth(user.id, currentYear, currentMonth);
-            setLessons(data);
+            
+            const substituteLessonsRaw = mySubstitutesTaken
+                .filter(sub => sub.zajecia)
+                .map(sub => ({
+                    ...sub.zajecia,
+                    isSubstituteLesson: true,
+                    id_zastepstwa: sub.id_zastepstwa
+                }))
+                .filter(lesson => {
+                    const lessonDate = new Date(lesson.data);
+                    return lessonDate.getFullYear() === currentYear && 
+                           lessonDate.getMonth() + 1 === currentMonth;
+                });
+            
+            const substituteLessons = await Promise.all(
+                substituteLessonsRaw.map(async (lesson) => {
+                    if (!lesson.grupa && lesson.id_grupy) {
+                        try {
+                            const grupa = await getGroupById(lesson.id_grupy);
+                            return { ...lesson, grupa };
+                        } catch (err) {
+                            console.error(`Błąd pobierania grupy ${lesson.id_grupy}:`, err);
+                            return lesson;
+                        }
+                    }
+                    return lesson;
+                })
+            );
+            
+            const allLessons = [...data, ...substituteLessons];
+            setLessons(allLessons);
         } catch (error) {
             console.error('Błąd pobierania lekcji:', error);
             setError('Nie udało się pobrać lekcji: ' + (error.message || 'Sprawdź połączenie z serwerem'));
@@ -189,6 +244,7 @@ export default function TeacherLessonsPage() {
     };
 
     const formatTime = (timeString) => {
+        if (!timeString) return '--:--';
         return timeString.substring(0, 5);
     };
 
@@ -237,18 +293,48 @@ export default function TeacherLessonsPage() {
                     <div className="grid grid-cols-3 gap-2">
                         <div className="bg-blue-50 border border-blue-200 rounded p-2 text-center">
                             <div className="text-blue-600 text-xs font-medium">Wszystkie</div>
-                            <div className="text-lg font-bold text-blue-700">{lessons.length}</div>
+                            <div className="text-lg font-bold text-blue-700">
+                                {lessons.filter(lesson => {
+                                    if (lesson.isSubstituteLesson) return true;
+                                    
+                                    const substituteAssigned = mySubstitutesReporting.find(sub => 
+                                        (sub.zajecia_id_zajec === lesson.id_zajec || sub.zajecia?.id_zajec === lesson.id_zajec) && 
+                                        sub.id_nauczyciel_zastepujacy
+                                    );
+                                    return !substituteAssigned;
+                                }).length}
+                            </div>
                         </div>
                         <div className="bg-green-50 border border-green-200 rounded p-2 text-center">
                             <div className="text-green-600 text-xs font-medium">Odbyte</div>
                             <div className="text-lg font-bold text-green-700">
-                                {lessons.filter(lesson => isLessonPast(lesson.data)).length}
+                                {lessons.filter(lesson => {
+                                    if (!isLessonPast(lesson.data)) return false;
+                                    
+                                    if (lesson.isSubstituteLesson) return true;
+                                    
+                                    const substituteAssigned = mySubstitutesReporting.find(sub => 
+                                        (sub.zajecia_id_zajec === lesson.id_zajec || sub.zajecia?.id_zajec === lesson.id_zajec) && 
+                                        sub.id_nauczyciel_zastepujacy
+                                    );
+                                    return !substituteAssigned;
+                                }).length}
                             </div>
                         </div>
                         <div className="bg-gray-50 border border-gray-200 rounded p-2 text-center">
                             <div className="text-gray-600 text-xs font-medium">Nadchodzące</div>
                             <div className="text-lg font-bold text-gray-700">
-                                {lessons.filter(lesson => !isLessonPast(lesson.data)).length}
+                                {lessons.filter(lesson => {
+                                    if (isLessonPast(lesson.data)) return false;
+                                    
+                                    if (lesson.isSubstituteLesson) return true;
+                                    
+                                    const substituteAssigned = mySubstitutesReporting.find(sub => 
+                                        (sub.zajecia_id_zajec === lesson.id_zajec || sub.zajecia?.id_zajec === lesson.id_zajec) && 
+                                        sub.id_nauczyciel_zastepujacy
+                                    );
+                                    return !substituteAssigned;
+                                }).length}
                             </div>
                         </div>
                     </div>
@@ -302,12 +388,12 @@ export default function TeacherLessonsPage() {
 
                                                 <div className="flex justify-between">
                                                     <span className="text-xs font-medium text-gray-500">Grupa:</span>
-                                                    <span className="text-sm text-gray-700">#{lesson.grupa.id_grupa}</span>
+                                                    <span className="text-sm text-gray-700">#{lesson.grupa?.id_grupa || lesson.id_grupy || '?'}</span>
                                                 </div>
 
                                                 <div className="flex justify-between">
                                                     <span className="text-xs font-medium text-gray-500">Sala:</span>
-                                                    <span className="text-sm text-gray-700">{lesson.Sala_id_sali}</span>
+                                                    <span className="text-sm text-gray-700">{lesson.Sala_id_sali || '-'}</span>
                                                 </div>
 
                                                 <div className="border-t pt-1 mt-1">
@@ -317,14 +403,16 @@ export default function TeacherLessonsPage() {
                                                             ? 'text-gray-400 italic'
                                                             : 'text-gray-700'
                                                     }`}>
-                                                        {lesson.tematZajec}
+                                                        {lesson.tematZajec || 'Brak'}
                                                     </p>
                                                 </div>
 
-                                                <div className="flex justify-between text-xs">
-                                                    <span className="text-gray-500">Dzień:</span>
-                                                    <span className="text-gray-700">{lesson.grupa.dzien_tygodnia}</span>
-                                                </div>
+                                                {lesson.grupa?.dzien_tygodnia && (
+                                                    <div className="flex justify-between text-xs">
+                                                        <span className="text-gray-500">Dzień:</span>
+                                                        <span className="text-gray-700">{lesson.grupa.dzien_tygodnia}</span>
+                                                    </div>
+                                                )}
 
                                                 <div className="flex justify-between text-xs">
                                                     <span className="text-gray-500">Uczniów:</span>
@@ -377,12 +465,23 @@ export default function TeacherLessonsPage() {
                                         {groupedLessons[date].map(lesson => {
                                             const isPast = isLessonPast(date);
                                             const isHovered = hoveredLesson === lesson.id_zajec;
+                                            
+                                            const substitute = mySubstitutesReporting.find(sub => 
+                                                sub.zajecia_id_zajec === lesson.id_zajec || sub.zajecia?.id_zajec === lesson.id_zajec
+                                            );
+                                            const hasSubstitute = substitute && substitute.id_nauczyciel_zastepujacy;
+                                            
+                                            const isSubstituteLesson = lesson.isSubstituteLesson;
 
                                             return (
                                                 <div
                                                     key={lesson.id_zajec}
                                                     className={`relative border rounded p-2 transition-all duration-200 cursor-pointer ${
-                                                        isPast
+                                                        isSubstituteLesson
+                                                            ? 'bg-blue-50 border-blue-300 hover:bg-blue-100'
+                                                            : hasSubstitute
+                                                            ? 'bg-orange-50 border-orange-300 hover:bg-orange-100'
+                                                            : isPast
                                                             ? 'bg-green-50 border-green-200 hover:bg-green-100'
                                                             : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                                                     } ${isHovered ? 'ring-1 ring-blue-400 shadow-md' : ''}`}
@@ -391,13 +490,29 @@ export default function TeacherLessonsPage() {
                                                 >
                                                     <div className="text-center">
                                                         <div className="text-xs font-bold text-gray-800 mb-1">
-                                                            Grupa #{lesson.grupa.id_grupa}
+                                                            Grupa #{lesson.grupa?.id_grupa || lesson.id_grupy || '?'}
                                                         </div>
-                                                        <div className={`text-sm font-bold ${
-                                                            isPast ? 'text-green-700' : 'text-gray-700'
-                                                        }`}>
-                                                            {formatTime(lesson.godzina)}
-                                                        </div>
+                                                        {isSubstituteLesson && (
+                                                            <div className="text-xs font-bold text-blue-600 mb-1">
+                                                                ✅ TWOJE ZASTĘPSTWO
+                                                            </div>
+                                                        )}
+                                                        {hasSubstitute && !isSubstituteLesson && (
+                                                            <div className="text-xs font-bold text-orange-600 mb-1">
+                                                                ZASTĘPSTWO
+                                                            </div>
+                                                        )}
+                                                        {!isSubstituteLesson && (
+                                                            <div className={`text-sm font-bold ${
+                                                                hasSubstitute 
+                                                                    ? 'text-orange-700' 
+                                                                    : isPast 
+                                                                    ? 'text-green-700' 
+                                                                    : 'text-gray-700'
+                                                            }`}>
+                                                                {formatTime(lesson.godzina)}
+                                                            </div>
+                                                        )}
                                                         <div className="text-xs text-gray-500 mt-1">
                                                             S{lesson.Sala_id_sali}
                                                         </div>
