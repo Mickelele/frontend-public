@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useAuth } from '/context/AuthContext';
-import { getAllPrizes, getStudentPrizes, claimPrize } from '/lib/api/prize.api';
+import { getAllPrizes, getStudentPrizes, claimPrize, getPrizeImageUrl } from '/lib/api/prize.api';
 import { getStudentPoints } from '/lib/api/points.api';
 
 export default function PrizesPage() {
@@ -176,12 +176,24 @@ export default function PrizesPage() {
                                                 !canAfford ? 'opacity-75' : ''
                                             }`}
                                         >
-                                            <div className="bg-gradient-to-br from-blue-400 to-purple-500 p-6 text-center">
-                                                <div className="text-6xl mb-2">🎁</div>
-                                                <h3 className="text-xl font-bold text-white">{prize.nazwa}</h3>
+                                            <div className="h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center relative overflow-hidden">
+                                                {prize.zdjecie ? (
+                                                    <img 
+                                                        src={getPrizeImageUrl(prize.id_nagrody)} 
+                                                        alt={prize.nazwa}
+                                                        className="w-full h-full object-contain p-2"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.parentElement.innerHTML = '<div class="text-6xl">🎁</div>';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="text-6xl">🎁</div>
+                                                )}
                                             </div>
                                             
                                             <div className="p-6">
+                                                <h3 className="text-xl font-bold text-gray-800 mb-4">{prize.nazwa}</h3>
                                                 <div className="flex items-center justify-between mb-4">
                                                     <span className="text-sm text-gray-500">Koszt:</span>
                                                     <span className="text-2xl font-bold text-blue-600">
@@ -250,14 +262,26 @@ export default function PrizesPage() {
                                         key={myPrize.id_nagrody_ucznia}
                                         className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all"
                                     >
-                                        <div className="bg-gradient-to-br from-green-400 to-emerald-500 p-6 text-center">
-                                            <div className="text-6xl mb-2">🏆</div>
-                                            <h3 className="text-xl font-bold text-white">
-                                                {myPrize.nagroda?.nazwa || 'Nagroda'}
-                                            </h3>
+                                        <div className="h-48 bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center relative overflow-hidden">
+                                            {myPrize.nagroda?.zdjecie ? (
+                                                <img 
+                                                    src={getPrizeImageUrl(myPrize.nagroda.id_nagrody)} 
+                                                    alt={myPrize.nagroda.nazwa}
+                                                    className="w-full h-full object-contain p-2"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentElement.innerHTML = '<div class="text-6xl">🏆</div>';
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="text-6xl">🏆</div>
+                                            )}
                                         </div>
                                         
                                         <div className="p-6">
+                                            <h3 className="text-xl font-bold text-gray-800 mb-4">
+                                                {myPrize.nagroda?.nazwa || 'Nagroda'}
+                                            </h3>
                                             <div className="space-y-2 text-sm">
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-500">Wartość:</span>
