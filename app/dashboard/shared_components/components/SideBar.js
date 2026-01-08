@@ -63,8 +63,11 @@ export default function Sidebar({ isOpen, onClose }) {
 
                 return [
                     { href: '/dashboard/opiekun', label: 'Dashboard', icon: '📊', description: 'Panel główny' },
+                    { href: '/dashboard/opiekun/zajecia', label: 'Zajęcia', icon: '📚', description: 'Historia zajęć uczniów' },
+                    { href: '/dashboard/opiekun/uwagi', label: 'Uwagi', icon: '💬', description: 'Uwagi nauczycieli' },
+                    { href: '/dashboard/opiekun/quizy', label: 'Quizy', icon: '🧩', description: 'Wyniki quizów' },
                     { href: '/dashboard/shared_components/students_presence', label: 'Obecności uczniów', icon: '📋', description: 'Śledzenie obecności' },
-                    { href: '/dashboard/nauczyciel/messages', label: 'Wiadomości', icon: '💬', description: 'Komunikacja' },
+                    { href: '/dashboard/nauczyciel/messages', label: 'Wiadomości', icon: '✉️', description: 'Komunikacja' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Twój profil' },
                     { href: '/dashboard/nauczyciel/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },
 

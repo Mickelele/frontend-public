@@ -1,16 +1,25 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '/lib/auth';
+import { useAuth } from '/context/AuthContext';
+import { getToken, getUserIdFromToken } from '/lib/auth';
+import { getMyProfile, updateMyProfile } from '/lib/api/users.api';
+import { getStudentById, updateStudent } from '/lib/api/student.api';
+import { getTeacherById, updateTeacher } from '/lib/api/teacher.api';
+import { getGuardianById, updateGuardian } from '/lib/api/guardian.api';
+
 const USER_API_URL = process.env.NEXT_PUBLIC_USER_API_URL;
 
-
 export default function ProfilePage() {
+    const { user: authUser } = useAuth();
     const [user, setUser] = useState(null);
+    const [roleData, setRoleData] = useState(null);
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [showUploader, setShowUploader] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [formData, setFormData] = useState({});
     const router = useRouter();
 
     useEffect(() => {
@@ -20,25 +29,39 @@ export default function ProfilePage() {
             return;
         }
 
-        const fetchUser = async () => {
+        const fetchUserData = async () => {
             try {
-                const res = await fetch(`${USER_API_URL}/user/me`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (!res.ok) throw new Error('Błąd pobierania danych');
-                const data = await res.json();
+                const userData = await getMyProfile();
+                const userId = getUserIdFromToken();
+                
+                setUser(userData);
 
-                if (data.zdjecie?.dane) {
-                    setPreview(`data:image/jpeg;base64,${data.zdjecie.dane}`);
+                if (userData.zdjecie?.dane) {
+                    setPreview(`data:image/jpeg;base64,${userData.zdjecie.dane}`);
                 }
-                setUser(data);
+
+                if (userData.rola === 'uczen') {
+                    const studentData = await getStudentById(userId);
+                    setRoleData(studentData);
+                    setFormData({ pseudonim: studentData.pseudonim || '' });
+                } else if (userData.rola === 'nauczyciel') {
+                    const teacherData = await getTeacherById(userId);
+                    setRoleData(teacherData);
+                    setFormData({ nr_konta_bankowego: teacherData.nr_konta_bankowego || '' });
+                } else if (userData.rola === 'opiekun') {
+                    const guardianData = await getGuardianById(userId);
+                    setRoleData(guardianData);
+                    setFormData({ nr_indy_konta_bankowego: guardianData.nr_indy_konta_bankowego || '' });
+                }
             } catch (err) {
-                console.error(err);
-                router.push('/auth/login');
+                console.error('Błąd ładowania profilu:', err);
+                if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+                    router.push('/auth/login');
+                }
             }
         };
 
-        fetchUser();
+        fetchUserData();
     }, [router]);
 
     const handleFileChange = (e) => {
@@ -78,7 +101,44 @@ export default function ProfilePage() {
         }
     };
 
+    const handleSaveChanges = async () => {
+        try {
+            const userId = getUserIdFromToken();
+            
+            if (user.rola === 'uczen') {
+                await updateStudent(userId, { pseudonim: formData.pseudonim });
+                alert('Pseudonim został zaktualizowany!');
+            } else if (user.rola === 'nauczyciel') {
+                await updateTeacher(userId, { nr_konta_bankowego: formData.nr_konta_bankowego });
+                alert('Numer konta został zaktualizowany!');
+            } else if (user.rola === 'opiekun') {
+                await updateGuardian(userId, { nr_indy_konta_bankowego: formData.nr_indy_konta_bankowego });
+                alert('Numer konta został zaktualizowany!');
+            }
+            setEditing(false);
+            
+            const userData = await getMyProfile();
+            setUser(userData);
+            
+            if (userData.rola === 'uczen') {
+                const studentData = await getStudentById(userId);
+                setRoleData(studentData);
+            } else if (userData.rola === 'nauczyciel') {
+                const teacherData = await getTeacherById(userId);
+                setRoleData(teacherData);
+            } else if (userData.rola === 'opiekun') {
+                const guardianData = await getGuardianById(userId);
+                setRoleData(guardianData);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Nie udało się zapisać zmian');
+        }
+    };
+
     if (!user) return <p className="text-center text-gray-500 mt-10">Ładowanie profilu...</p>;
+
+    const canEdit = user.rola !== 'administrator';
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-gradient-to-b from-gray-50 to-gray-200 p-6">
@@ -136,11 +196,123 @@ export default function ProfilePage() {
                     )}
                 </div>
 
-                <div className="mt-8 border-t pt-6 text-gray-700 space-y-2">
-                    <p><strong>Imię:</strong> {user.imie}</p>
-                    <p><strong>Nazwisko:</strong> {user.nazwisko}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
-                    <p><strong>Rola:</strong> {user.rola}</p>
+                <div className="mt-8 border-t pt-6 text-gray-700 space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                        <p className="font-semibold">Imię:</p>
+                        <p>{user.imie}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                        <p className="font-semibold">Nazwisko:</p>
+                        <p>{user.nazwisko}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                        <p className="font-semibold">Email:</p>
+                        <p>{user.email}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                        <p className="font-semibold">Rola:</p>
+                        <p className="capitalize">{user.rola}</p>
+                    </div>
+
+                    {user.rola === 'uczen' && roleData && (
+                        <div className="border-t pt-4">
+                            <div className="grid grid-cols-2 gap-2 items-center">
+                                <p className="font-semibold">Pseudonim:</p>
+                                {editing ? (
+                                    <input
+                                        type="text"
+                                        value={formData.pseudonim}
+                                        onChange={(e) => setFormData({ ...formData, pseudonim: e.target.value })}
+                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                ) : (
+                                    <p>{roleData.pseudonim || 'Brak'}</p>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <p className="font-semibold">Punkty:</p>
+                                <p>{roleData.saldo_punktow || 0}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {user.rola === 'nauczyciel' && roleData && (
+                        <div className="border-t pt-4">
+                            <div className="grid grid-cols-2 gap-2 items-center">
+                                <p className="font-semibold">Numer konta:</p>
+                                {editing ? (
+                                    <input
+                                        type="text"
+                                        value={formData.nr_konta_bankowego}
+                                        onChange={(e) => setFormData({ ...formData, nr_konta_bankowego: e.target.value })}
+                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        placeholder="00 0000 0000 0000 0000 0000 0000"
+                                    />
+                                ) : (
+                                    <p>{roleData.nr_konta_bankowego || 'Brak'}</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {user.rola === 'opiekun' && roleData && (
+                        <div className="border-t pt-4">
+                            <div className="grid grid-cols-2 gap-2 items-center">
+                                <p className="font-semibold">Numer konta:</p>
+                                {editing ? (
+                                    <input
+                                        type="text"
+                                        value={formData.nr_indy_konta_bankowego}
+                                        onChange={(e) => setFormData({ ...formData, nr_indy_konta_bankowego: e.target.value })}
+                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        placeholder="00 0000 0000 0000 0000 0000 0000"
+                                    />
+                                ) : (
+                                    <p>{roleData.nr_indy_konta_bankowego || 'Brak'}</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {canEdit && (
+                        <div className="flex gap-3 justify-center pt-4">
+                            {!editing ? (
+                                <button
+                                    onClick={() => setEditing(true)}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition"
+                                >
+                                    Edytuj dane
+                                </button>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={handleSaveChanges}
+                                        className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition"
+                                    >
+                                        Zapisz zmiany
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setEditing(false);
+                                            if (user.rola === 'uczen') {
+                                                setFormData({ pseudonim: roleData.pseudonim || '' });
+                                            } else if (user.rola === 'nauczyciel') {
+                                                setFormData({ nr_konta_bankowego: roleData.nr_konta_bankowego || '' });
+                                            } else if (user.rola === 'opiekun') {
+                                                setFormData({ nr_indy_konta_bankowego: roleData.nr_indy_konta_bankowego || '' });
+                                            }
+                                        }}
+                                        className="bg-gray-500 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition"
+                                    >
+                                        Anuluj
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

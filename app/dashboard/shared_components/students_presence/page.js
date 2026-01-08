@@ -80,40 +80,69 @@ export default function StudentsPresencePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
+            <div className="max-w-7xl mx-auto">
 
                 <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        Obecności uczniów
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        📋 Obecności uczniów
                     </h1>
-                    <p className="text-gray-600 mt-2">
-                        Przeglądaj obecności wszystkich przypisanych uczniów
+                    <p className="text-gray-600 mt-2 text-lg">
+                        Przeglądaj frekwencję wszystkich przypisanych uczniów
                     </p>
                 </header>
 
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div className="bg-white p-4 rounded-lg shadow text-center">
-                        <div className="text-2xl font-bold text-blue-600">{students.length}</div>
-                        <div className="text-gray-600">Liczba uczniów</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg shadow text-center">
-                        <div className="text-2xl font-bold text-green-600">
-                            {Object.values(presence).flat().filter(p => p.czyObecny).length}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-3xl font-bold text-blue-600">{students.length}</div>
+                                <div className="text-gray-600 text-sm mt-1">Uczniów</div>
+                            </div>
+                            <div className="text-4xl">👥</div>
                         </div>
-                        <div className="text-gray-600">Obecności</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg shadow text-center">
-                        <div className="text-2xl font-bold text-red-600">
-                            {Object.values(presence).flat().filter(p => !p.czyObecny).length}
+                    <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-3xl font-bold text-green-600">
+                                    {Object.values(presence).flat().filter(p => p.czyObecny).length}
+                                </div>
+                                <div className="text-gray-600 text-sm mt-1">Obecności</div>
+                            </div>
+                            <div className="text-4xl">✅</div>
                         </div>
-                        <div className="text-gray-600">Nieobecności</div>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-500 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-3xl font-bold text-red-600">
+                                    {Object.values(presence).flat().filter(p => !p.czyObecny).length}
+                                </div>
+                                <div className="text-gray-600 text-sm mt-1">Nieobecności</div>
+                            </div>
+                            <div className="text-4xl">❌</div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-3xl font-bold text-purple-600">
+                                    {Object.values(presence).flat().length > 0
+                                        ? ((Object.values(presence).flat().filter(p => p.czyObecny).length / 
+                                           Object.values(presence).flat().length) * 100).toFixed(0)
+                                        : 0}%
+                                </div>
+                                <div className="text-gray-600 text-sm mt-1">Frekwencja</div>
+                            </div>
+                            <div className="text-4xl">📊</div>
+                        </div>
                     </div>
                 </div>
 
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
                     {students.map((student) => (
                         <PresenceCard
                             key={student.id_ucznia}
