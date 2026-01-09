@@ -43,6 +43,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 return [
                     { href: '/dashboard/administrator', label: 'Dashboard', icon: '📊', description: 'Panel administracyjny' },
                     { href: '/dashboard/administrator/users', label: 'Użytkownicy', icon: '👥', description: 'Zarządzanie użytkownikami' },
+                    { href: '/dashboard/administrator/courses', label: 'Kursy i grupy', icon: '📚', description: 'Zarządzanie kursami i grupami' },
                     { href: '/dashboard/administrator/prizes', label: 'Nagrody', icon: '🏆', description: 'Zarządzanie nagrodami' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Twój profil' },
                 ];

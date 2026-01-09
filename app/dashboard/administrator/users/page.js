@@ -4,6 +4,7 @@ import { useAuth } from '/context/AuthContext';
 import { getStudents, createStudent, updateStudent, deleteStudent, enrollStudentToGroup, assignGuardianToStudent } from '/lib/api/student.api';
 import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from '/lib/api/teacher.api';
 import { getAllGuardians, createGuardian, updateGuardian, deleteGuardian } from '/lib/api/guardian.api';
+import { getAdministrators, createAdministrator, deleteAdministrator } from '/lib/api/administrator.api';
 import { getCourses, getCourseGroups } from '/lib/api/course.api';
 import { createUser, getUserById, updateUser, deleteUser } from '/lib/api/users.api';
 
@@ -15,6 +16,7 @@ export default function UsersManagement() {
     const [students, setStudents] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [guardians, setGuardians] = useState([]);
+    const [administrators, setAdministrators] = useState([]);
     const [allGroups, setAllGroups] = useState([]);
     
     const [searchTerm, setSearchTerm] = useState('');
@@ -22,9 +24,11 @@ export default function UsersManagement() {
     
     const [showUserModal, setShowUserModal] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalType, setModalType] = useState('');
     const [guardianSearchTerm, setGuardianSearchTerm] = useState('');
+    const [newRole, setNewRole] = useState('');
     
     const [userForm, setUserForm] = useState({
         imie: '',
@@ -49,10 +53,11 @@ export default function UsersManagement() {
         try {
             setLoading(true);
             
-            const [studentsData, teachersData, guardiansData, coursesData] = await Promise.all([
+            const [studentsData, teachersData, guardiansData, administratorsData, coursesData] = await Promise.all([
                 getStudents(),
                 getTeachers(),
                 getAllGuardians(),
+                getAdministrators(),
                 getCourses()
             ]);
 
@@ -103,6 +108,7 @@ export default function UsersManagement() {
             setStudents(studentsWithUserData);
             setTeachers(teachersWithUserData);
             setGuardians(guardiansWithUserData);
+            setAdministrators(administratorsData || []);
             
             const groupsPromises = coursesData?.map(course => getCourseGroups(course.id_kursu)) || [];
             const groupsArrays = await Promise.all(groupsPromises);
@@ -313,6 +319,80 @@ export default function UsersManagement() {
         setShowUserModal(true);
     };
 
+    const handleOpenRoleChange = (userToEdit, currentRole) => {
+        setSelectedUser(userToEdit);
+        setNewRole(currentRole);
+        setShowRoleChangeModal(true);
+    };
+
+    const handleChangeRole = async () => {
+        if (!selectedUser || !newRole) {
+            alert('Wybierz nową rolę');
+            return;
+        }
+
+        const userId = selectedUser.id_ucznia || selectedUser.id_nauczyciela || selectedUser.id_opiekuna || selectedUser.id_uzytkownika;
+        const oldRole = selectedUser.rola || (selectedUser.id_ucznia ? 'uczen' : selectedUser.id_nauczyciela ? 'nauczyciel' : 'opiekun');
+
+        if (oldRole === newRole) {
+            alert('Nowa rola jest taka sama jak obecna');
+            return;
+        }
+
+        if (!confirm(`Czy na pewno chcesz zmienić rolę użytkownika ${selectedUser.imie} ${selectedUser.nazwisko} z "${oldRole}" na "${newRole}"? To spowoduje usunięcie danych z tabeli "${oldRole}" i utworzenie w tabeli "${newRole}".`)) {
+            return;
+        }
+
+        try {
+            // Step 1: Delete from old role table (skip for administrator - no separate table)
+            if (oldRole === 'uczen') {
+                await deleteStudent(userId);
+            } else if (oldRole === 'nauczyciel') {
+                await deleteTeacher(userId);
+            } else if (oldRole === 'opiekun') {
+                await deleteGuardian(userId);
+            } else if (oldRole === 'administrator') {
+                await deleteAdministrator(userId);
+            }
+
+            // Step 2: Update user role in user table
+            await updateUser(userId, { rola: newRole });
+
+            // Step 3: Create in new role table (skip for administrator - no separate table)
+            if (newRole === 'uczen') {
+                await createStudent({
+                    id_ucznia: userId,
+                    id_grupa: null,
+                    Opiekun_id_opiekuna: null,
+                    saldo_punktow: 0,
+                    pseudonim: `${selectedUser.imie}_${selectedUser.nazwisko}`
+                });
+            } else if (newRole === 'nauczyciel') {
+                await createTeacher({
+                    id_nauczyciela: userId,
+                    numer_nauczyciela: Math.floor(Math.random() * 10000),
+                    nr_konta_bankowego: ''
+                });
+            } else if (newRole === 'opiekun') {
+                await createGuardian({
+                    id_opiekuna: userId,
+                    nr_indy_konta_bankowego: ''
+                });
+            } else if (newRole === 'administrator') {
+                await createAdministrator({
+                    id_administratora: userId
+                });
+            }
+
+            alert(`Rola użytkownika została zmieniona z "${oldRole}" na "${newRole}"!`);
+            setShowRoleChangeModal(false);
+            await loadUsersData();
+        } catch (err) {
+            console.error('Błąd zmiany roli:', err);
+            alert('Nie udało się zmienić roli użytkownika: ' + (err.message || 'Nieznany błąd'));
+        }
+    };
+
     const filteredStudents = students.filter(student => {
         const searchMatch = searchTerm === '' || 
             `${student.imie} ${student.nazwisko}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -335,6 +415,12 @@ export default function UsersManagement() {
         searchTerm === '' || 
         `${guardian.imie} ${guardian.nazwisko}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         guardian.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredAdministrators = administrators.filter(admin =>
+        searchTerm === '' || 
+        `${admin.user?.imie} ${admin.user?.nazwisko}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        admin.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -440,6 +526,19 @@ export default function UsersManagement() {
                                 }`}
                             >
                                 👨‍👩‍👦 Opiekunowie ({guardians.length})
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setActiveTab('administrators');
+                                    setSearchTerm('');
+                                }}
+                                className={`px-6 py-4 font-medium transition-colors ${
+                                    activeTab === 'administrators'
+                                        ? 'border-b-2 border-blue-600 text-blue-600'
+                                        : 'text-gray-600 hover:text-blue-600'
+                                }`}
+                            >
+                                🔑 Administratorzy ({administrators.length})
                             </button>
                         </nav>
                     </div>
@@ -553,6 +652,13 @@ export default function UsersManagement() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                         <button 
+                                                            onClick={() => handleOpenRoleChange(student, 'uczen')}
+                                                            className="text-purple-600 hover:text-purple-800 mr-3"
+                                                            title="Zmień rolę"
+                                                        >
+                                                            🔄
+                                                        </button>
+                                                        <button 
                                                             onClick={() => handleEditUser(student, 'uczen')}
                                                             className="text-blue-600 hover:text-blue-800 mr-3"
                                                         >
@@ -617,6 +723,12 @@ export default function UsersManagement() {
                                             </div>
                                             <div className="flex gap-2">
                                                 <button 
+                                                    onClick={() => handleOpenRoleChange(teacher, 'nauczyciel')}
+                                                    className="flex-1 px-3 py-2 bg-purple-50 text-purple-600 rounded hover:bg-purple-100"
+                                                >
+                                                    🔄 Rola
+                                                </button>
+                                                <button 
                                                     onClick={() => handleEditUser(teacher, 'nauczyciel')}
                                                     className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
                                                 >
@@ -679,6 +791,12 @@ export default function UsersManagement() {
                                             </div>
                                             <div className="flex gap-2">
                                                 <button 
+                                                    onClick={() => handleOpenRoleChange(guardian, 'opiekun')}
+                                                    className="flex-1 px-3 py-2 bg-purple-50 text-purple-600 rounded hover:bg-purple-100"
+                                                >
+                                                    🔄 Rola
+                                                </button>
+                                                <button 
                                                     onClick={() => handleEditUser(guardian, 'opiekun')}
                                                     className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
                                                 >
@@ -697,6 +815,54 @@ export default function UsersManagement() {
                                 {filteredGuardians.length === 0 && (
                                     <div className="text-center py-12 text-gray-500">
                                         Nie znaleziono opiekunów
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'administrators' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900">Lista administratorów</h2>
+                                    <div className="flex gap-3">
+                                        <input
+                                            type="text"
+                                            placeholder="🔍 Szukaj..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {filteredAdministrators.map((admin) => (
+                                        <div key={admin.id_administratora} className="bg-white border-2 border-yellow-200 rounded-lg p-6 shadow-md">
+                                            <div className="flex items-start gap-4 mb-4">
+                                                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                                                    {admin.user?.imie?.[0]}{admin.user?.nazwisko?.[0]}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                                        {admin.user?.imie} {admin.user?.nazwisko}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-600">
+                                                        📧 {admin.user?.email || 'Brak'}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        ID: {admin.id_administratora}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-yellow-50 rounded-lg p-3 text-center">
+                                                <span className="text-xs font-bold text-yellow-700 uppercase">🔑 Administrator</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                {filteredAdministrators.length === 0 && (
+                                    <div className="text-center py-12 text-gray-500">
+                                        Nie znaleziono administratorów
                                     </div>
                                 )}
                             </div>
@@ -953,6 +1119,81 @@ export default function UsersManagement() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {showRoleChangeModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                            🔄 Zmień rolę użytkownika
+                        </h2>
+
+                        <div className="mb-6">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <div className="text-sm text-gray-700 mb-2">
+                                    <strong>Użytkownik:</strong> {selectedUser?.imie} {selectedUser?.nazwisko}
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                    <strong>Obecna rola:</strong> 
+                                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                        {selectedUser?.rola || (selectedUser?.id_ucznia ? 'uczen' : selectedUser?.id_nauczyciela ? 'nauczyciel' : 'opiekun')}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                <div className="flex items-start gap-2">
+                                    <span className="text-yellow-600 text-xl">⚠️</span>
+                                    <div className="text-sm text-gray-700">
+                                        <strong>Uwaga!</strong> Zmiana roli spowoduje:
+                                        <ul className="list-disc ml-5 mt-2 space-y-1">
+                                            <li>Usunięcie danych z tabeli starej roli</li>
+                                            <li>Zmianę roli w tabeli użytkowników</li>
+                                            <li>Utworzenie wpisu w tabeli nowej roli</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Nowa rola:
+                                </label>
+                                <select
+                                    value={newRole}
+                                    onChange={(e) => setNewRole(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                >
+                                    <option value="uczen">👨‍🎓 Uczeń</option>
+                                    <option value="nauczyciel">👨‍🏫 Nauczyciel</option>
+                                    <option value="opiekun">👨‍👩‍👦 Opiekun</option>
+                                    <option value="administrator">🔑 Administrator</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowRoleChangeModal(false);
+                                    setSelectedUser(null);
+                                    setNewRole('');
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                            >
+                                Anuluj
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleChangeRole}
+                                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                            >
+                                Zmień rolę
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
