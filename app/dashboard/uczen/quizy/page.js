@@ -10,6 +10,7 @@ import {
     getAnswersByQuestion 
 } from '../../../../lib/api/quiz.api';
 import { getStudentById } from '../../../../lib/api/student.api';
+import { getLessonsForGroup } from '../../../../lib/api/lesson.api';
 import { useAuth } from '../../../../context/AuthContext';
 
 export default function StudentQuizzesPage() {
@@ -57,8 +58,35 @@ export default function StudentQuizzesPage() {
     const loadQuizzes = async () => {
         try {
             setLoading(true);
-            const data = await getQuizzesByGroup(groupId);
-            setQuizzes(data || []);
+            const [quizzesData, lessonsData] = await Promise.all([
+                getQuizzesByGroup(groupId),
+                getLessonsForGroup(groupId)
+            ]);
+            
+            // Filtruj quizy - pokaż tylko te, które są przypisane do zajęć które były dzisiaj lub wcześniej
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Ustaw na początek dnia
+            
+            const filteredQuizzes = (quizzesData || []).filter(quiz => {
+                // Jeśli quiz nie ma przypisanych zajęć, nie pokazuj go
+                if (!quiz.Zajecia_id_zajec) {
+                    return false;
+                }
+                
+                // Znajdź zajęcia dla tego quizu
+                const lesson = lessonsData.find(l => l.id_zajec === quiz.Zajecia_id_zajec);
+                if (!lesson || !lesson.data) {
+                    return false;
+                }
+                
+                // Sprawdź czy data zajęć jest dzisiaj lub w przeszłości
+                const lessonDate = new Date(lesson.data);
+                lessonDate.setHours(0, 0, 0, 0);
+                
+                return lessonDate <= today;
+            });
+            
+            setQuizzes(filteredQuizzes);
             setError(null);
         } catch (err) {
             console.error('Błąd ładowania quizów:', err);

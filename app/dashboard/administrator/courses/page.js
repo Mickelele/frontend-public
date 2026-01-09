@@ -52,6 +52,15 @@ export default function CoursesManagementPage() {
     const [showRoomModal, setShowRoomModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showStudentManagement, setShowStudentManagement] = useState(false);
+    const [showRoomAvailability, setShowRoomAvailability] = useState(false);
+    const [availabilityForm, setAvailabilityForm] = useState({
+        id_sali: '',
+        data: '',
+        godzina_od: '',
+        godzina_do: ''
+    });
+    const [availabilityResults, setAvailabilityResults] = useState(null);
+    const [availabilityLocationFilter, setAvailabilityLocationFilter] = useState('');
 
     // Edit states
     const [editingCourse, setEditingCourse] = useState(null);
@@ -420,6 +429,120 @@ export default function CoursesManagementPage() {
             console.error('Błąd zapisywania sali:', error);
             alert('Nie udało się zapisać sali');
         }
+    };
+
+    const handleCheckAvailability = () => {
+        const { id_sali, data, godzina_od, godzina_do } = availabilityForm;
+        
+        if (!id_sali || !data || !godzina_od || !godzina_do) {
+            alert('Wypełnij wszystkie pola');
+            return;
+        }
+        
+        // Sprawdź czy przedział czasowy jest poprawny
+        if (godzina_od >= godzina_do) {
+            alert('Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia');
+            return;
+        }
+        
+        // Znajdź zajęcia w danej sali w danym dniu
+        const roomLessons = lessons.filter(lesson => {
+            if (lesson.Sala_id_sali !== parseInt(id_sali)) return false;
+            if (!lesson.data) return false;
+            
+            const lessonDate = lesson.data.split('T')[0];
+            return lessonDate === data;
+        });
+        
+        // Sprawdź konflikty czasowe
+        const conflicts = roomLessons.filter(lesson => {
+            const group = groups.find(g => g.id_grupa === lesson.id_grupy);
+            if (!group || !group.godzina) return false;
+            
+            const lessonStart = group.godzina.substring(0, 5);
+            // Zakładamy zajęcia trwają 1.5h (90 minut)
+            const [hours, minutes] = lessonStart.split(':').map(Number);
+            const totalMinutes = hours * 60 + minutes + 90;
+            const endHours = Math.floor(totalMinutes / 60);
+            const endMinutes = totalMinutes % 60;
+            const lessonEnd = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+            
+            // Sprawdź nakładanie się
+            return !(godzina_do <= lessonStart || godzina_od >= lessonEnd);
+        });
+        
+        const room = rooms.find(r => r.id_sali === parseInt(id_sali));
+        
+        setAvailabilityResults({
+            room: room,
+            isAvailable: conflicts.length === 0,
+            conflicts: conflicts.map(lesson => {
+                const group = groups.find(g => g.id_grupa === lesson.id_grupy);
+                const course = courses.find(c => c.id_kursu === group?.Kurs_id_kursu);
+                const teacher = teachers.find(t => t.id_nauczyciela === group?.id_nauczyciela);
+                return {
+                    ...lesson,
+                    group,
+                    course,
+                    teacher,
+                    time: group?.godzina?.substring(0, 5)
+                };
+            }),
+            allLessons: roomLessons.map(lesson => {
+                const group = groups.find(g => g.id_grupa === lesson.id_grupy);
+                const course = courses.find(c => c.id_kursu === group?.Kurs_id_kursu);
+                const teacher = teachers.find(t => t.id_nauczyciela === group?.id_nauczyciela);
+                return {
+                    ...lesson,
+                    group,
+                    course,
+                    teacher,
+                    time: group?.godzina?.substring(0, 5)
+                };
+            })
+        });
+    };
+
+    // Funkcja sprawdzająca czy sala jest zajęta w danym terminie
+    const isRoomOccupied = (roomId, date, groupId) => {
+        if (!date || !groupId) return false;
+        
+        const selectedGroup = groups.find(g => g.id_grupa === parseInt(groupId));
+        if (!selectedGroup || !selectedGroup.godzina) return false;
+        
+        const selectedTime = selectedGroup.godzina.substring(0, 5);
+        const [hours, minutes] = selectedTime.split(':').map(Number);
+        const totalMinutes = hours * 60 + minutes + 90; // 90 minut trwania
+        const endHours = Math.floor(totalMinutes / 60);
+        const endMinutes = totalMinutes % 60;
+        const selectedEndTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+        
+        // Znajdź zajęcia w tej samej sali, w tym samym dniu
+        const conflicts = lessons.filter(lesson => {
+            // Pomiń edytowane zajęcia
+            if (editingLesson && lesson.id_zajec === editingLesson.id_zajec) return false;
+            
+            if (lesson.Sala_id_sali !== parseInt(roomId)) return false;
+            if (!lesson.data) return false;
+            
+            const lessonDate = lesson.data.split('T')[0];
+            if (lessonDate !== date) return false;
+            
+            const lessonGroup = groups.find(g => g.id_grupa === lesson.id_grupy);
+            if (!lessonGroup || !lessonGroup.godzina) return false;
+            
+            const lessonStart = lessonGroup.godzina.substring(0, 5);
+            const [lHours, lMinutes] = lessonStart.split(':').map(Number);
+            const lTotalMinutes = lHours * 60 + lMinutes + 90;
+            const lEndHours = Math.floor(lTotalMinutes / 60);
+            const lEndMinutes = lTotalMinutes % 60;
+            const lessonEnd = `${String(lEndHours).padStart(2, '0')}:${String(lEndMinutes).padStart(2, '0')}`;
+            
+            // Sprawdź nakładanie się przedziałów czasowych
+            return !(selectedEndTime <= lessonStart || selectedTime >= lessonEnd);
+        });
+        
+        return conflicts.length > 0;
     };
 
     const handleEditRoom = (room) => {
@@ -977,16 +1100,34 @@ export default function CoursesManagementPage() {
                                     <h2 className="text-2xl font-semibold text-gray-800">
                                         Sale ({rooms.filter(room => !selectedLocationFilterRooms || room.lokalizacja === selectedLocationFilterRooms).length})
                                     </h2>
-                                    <button
-                                        onClick={() => {
-                                            setEditingRoom(null);
-                                            setRoomForm({ numer: '', lokalizacja: '', ilosc_miejsc: '' });
-                                            setShowRoomModal(true);
-                                        }}
-                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
-                                    >
-                                        ➕ Dodaj Salę
-                                    </button>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setAvailabilityForm({
+                                                    id_sali: '',
+                                                    data: '',
+                                                    godzina_od: '',
+                                                    godzina_do: ''
+                                                });
+                                                setAvailabilityResults(null);
+                                                setAvailabilityLocationFilter('');
+                                                setShowRoomAvailability(true);
+                                            }}
+                                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                        >
+                                            🔍 Sprawdź Dostępność
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setEditingRoom(null);
+                                                setRoomForm({ numer: '', lokalizacja: '', ilosc_miejsc: '' });
+                                                setShowRoomModal(true);
+                                            }}
+                                            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                        >
+                                            ➕ Dodaj Salę
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Filtr po lokalizacji */}
@@ -1321,7 +1462,9 @@ export default function CoursesManagementPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Sala *
+                                        Sala * {lessonForm.id_grupy && lessonForm.data && (
+                                            <span className="text-xs text-gray-500">(pokazuję tylko wolne sale)</span>
+                                        )}
                                     </label>
                                     <select
                                         value={lessonForm.Sala_id_sali}
@@ -1332,12 +1475,29 @@ export default function CoursesManagementPage() {
                                         <option value="">Wybierz salę</option>
                                         {rooms
                                             .filter(room => room.lokalizacja === selectedLocation)
-                                            .map(room => (
-                                                <option key={room.id_sali} value={room.id_sali}>
-                                                    Sala {room.numer} ({room.ilosc_miejsc} miejsc)
-                                                </option>
-                                            ))}
+                                            .filter(room => {
+                                                // Jeśli wybrano grupę i datę, pokaż tylko wolne sale
+                                                if (lessonForm.id_grupy && lessonForm.data) {
+                                                    return !isRoomOccupied(room.id_sali, lessonForm.data, lessonForm.id_grupy);
+                                                }
+                                                return true;
+                                            })
+                                            .map(room => {
+                                                const isOccupied = lessonForm.id_grupy && lessonForm.data 
+                                                    ? isRoomOccupied(room.id_sali, lessonForm.data, lessonForm.id_grupy)
+                                                    : false;
+                                                return (
+                                                    <option key={room.id_sali} value={room.id_sali}>
+                                                        Sala {room.numer} ({room.ilosc_miejsc} miejsc) {isOccupied ? '❌ Zajęta' : '✅'}
+                                                    </option>
+                                                );
+                                            })}
                                     </select>
+                                    {lessonForm.id_grupy && lessonForm.data && selectedLocation && rooms.filter(room => room.lokalizacja === selectedLocation && !isRoomOccupied(room.id_sali, lessonForm.data, lessonForm.id_grupy)).length === 0 && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            ⚠️ Brak wolnych sal w tej lokalizacji o wybranej godzinie
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex gap-3 pt-4">
@@ -1560,6 +1720,195 @@ export default function CoursesManagementPage() {
                                     setSelectedGroup(null);
                                     setGroupStudents([]);
                                     setSearchStudentTerm('');
+                                }}
+                                className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-all font-medium"
+                            >
+                                Zamknij
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Room Availability Modal */}
+            {showRoomAvailability && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 rounded-t-lg">
+                            <h3 className="text-2xl font-bold text-white">
+                                🔍 Sprawdzanie Dostępności Sali
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        📍 Lokalizacja (filtr)
+                                    </label>
+                                    <select
+                                        value={availabilityLocationFilter}
+                                        onChange={(e) => {
+                                            setAvailabilityLocationFilter(e.target.value);
+                                            setAvailabilityForm({ ...availabilityForm, id_sali: '' });
+                                        }}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Wszystkie lokalizacje</option>
+                                        {[...new Set(rooms.map(r => r.lokalizacja).filter(Boolean))].sort().map(loc => (
+                                            <option key={loc} value={loc}>
+                                                {loc}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Sala *
+                                    </label>
+                                    <select
+                                        value={availabilityForm.id_sali}
+                                        onChange={(e) => setAvailabilityForm({ ...availabilityForm, id_sali: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Wybierz salę</option>
+                                        {rooms
+                                            .filter(room => !availabilityLocationFilter || room.lokalizacja === availabilityLocationFilter)
+                                            .map(room => (
+                                            <option key={room.id_sali} value={room.id_sali}>
+                                                Sala {room.numer} - {room.lokalizacja} ({room.ilosc_miejsc} miejsc)
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Data *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={availabilityForm.data}
+                                        onChange={(e) => setAvailabilityForm({ ...availabilityForm, data: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Godzina rozpoczęcia *
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={availabilityForm.godzina_od}
+                                        onChange={(e) => setAvailabilityForm({ ...availabilityForm, godzina_od: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Godzina zakończenia *
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={availabilityForm.godzina_do}
+                                        onChange={(e) => setAvailabilityForm({ ...availabilityForm, godzina_do: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={handleCheckAvailability}
+                                className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all mb-6"
+                            >
+                                🔍 Sprawdź
+                            </button>
+
+                            {/* Wyniki sprawdzania */}
+                            {availabilityResults && (
+                                <div className="mt-6">
+                                    <div className={`p-6 rounded-lg border-2 ${
+                                        availabilityResults.isAvailable 
+                                            ? 'bg-green-50 border-green-500' 
+                                            : 'bg-red-50 border-red-500'
+                                    }`}>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className={`text-4xl`}>
+                                                {availabilityResults.isAvailable ? '✅' : '❌'}
+                                            </div>
+                                            <div>
+                                                <h4 className={`text-xl font-bold ${
+                                                    availabilityResults.isAvailable ? 'text-green-800' : 'text-red-800'
+                                                }`}>
+                                                    {availabilityResults.isAvailable ? 'Sala jest dostępna!' : 'Sala jest zajęta!'}
+                                                </h4>
+                                                <p className={`text-sm ${
+                                                    availabilityResults.isAvailable ? 'text-green-700' : 'text-red-700'
+                                                }`}>
+                                                    Sala {availabilityResults.room?.numer} - {availabilityResults.room?.lokalizacja}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {!availabilityResults.isAvailable && availabilityResults.conflicts.length > 0 && (
+                                            <div className="mt-4">
+                                                <h5 className="font-semibold text-red-800 mb-3">Konflikty w wybranym terminie:</h5>
+                                                <div className="space-y-2">
+                                                    {availabilityResults.conflicts.map((conflict, idx) => (
+                                                        <div key={idx} className="bg-white p-3 rounded-lg border border-red-200">
+                                                            <p className="font-medium text-gray-800">{conflict.tematZajec}</p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Kurs: {conflict.course?.nazwa_kursu || 'Brak'}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Nauczyciel: {conflict.teacher?.user ? `${conflict.teacher.user.imie} ${conflict.teacher.user.nazwisko}` : 'Brak'}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Godzina: {conflict.time} (zakładany czas: 90 min)
+                                                            </p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {availabilityResults.allLessons.length > 0 && (
+                                            <div className="mt-4">
+                                                <h5 className="font-semibold text-gray-800 mb-3">
+                                                    Wszystkie zajęcia w tym dniu ({availabilityResults.allLessons.length}):
+                                                </h5>
+                                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                                    {availabilityResults.allLessons.map((lesson, idx) => (
+                                                        <div key={idx} className="bg-white p-3 rounded-lg border border-gray-200">
+                                                            <p className="font-medium text-gray-800">{lesson.tematZajec}</p>
+                                                            <p className="text-sm text-gray-600">
+                                                                {lesson.course?.nazwa_kursu} - {lesson.time}
+                                                            </p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {availabilityResults.allLessons.length === 0 && availabilityResults.isAvailable && (
+                                            <p className="text-green-700 text-sm mt-2">
+                                                Brak zaplanowanych zajęć w tym dniu.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-6 border-t">
+                            <button
+                                onClick={() => {
+                                    setShowRoomAvailability(false);
+                                    setAvailabilityForm({
+                                        id_sali: '',
+                                        data: '',
+                                        godzina_od: '',
+                                        godzina_do: ''
+                                    });
+                                    setAvailabilityResults(null);
+                                    setAvailabilityLocationFilter('');
                                 }}
                                 className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-all font-medium"
                             >
