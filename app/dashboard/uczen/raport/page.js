@@ -296,6 +296,7 @@ export default function StudentReportPage() {
                     </div>
                 </div>
             </div>
+        </div>
         </>
     );
 }
