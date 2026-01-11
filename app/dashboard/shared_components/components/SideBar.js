@@ -45,6 +45,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/administrator/users', label: 'Użytkownicy', icon: '👥', description: 'Zarządzanie użytkownikami' },
                     { href: '/dashboard/administrator/courses', label: 'Kursy i grupy', icon: '📚', description: 'Zarządzanie kursami i grupami' },
                     { href: '/dashboard/administrator/substitutions', label: 'Zastępstwa', icon: '🔄', description: 'Zarządzanie zastępstwami' },
+                    { href: '/dashboard/administrator/rankings', label: 'Rankingi', icon: '🏆', description: 'Rankingi uczniów' },
                     { href: '/dashboard/administrator/quiz', label: 'Quizy', icon: '🧩', description: 'Zarządzanie quizami' },
                     { href: '/dashboard/administrator/technical', label: 'Zgłoszenia techniczne', icon: '🔧', description: 'Zgłoszenia problemów' },
                     { href: '/dashboard/administrator/prizes', label: 'Nagrody', icon: '🏆', description: 'Zarządzanie nagrodami' },
@@ -59,7 +60,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/nauczyciel/substitutes', label: 'Zastępstwa', icon: '🔄', description: 'Zarządzanie zastępstwami' },
                     { href: '/dashboard/nauczyciel/quiz', label: 'Quizy', icon: '🧩', description: 'Testy i quizy' },
                     { href: '/dashboard/nauczyciel/homework', label: 'Zadania domowe', icon: '📝', description: 'Zadania i prace' },
-                    { href: '/dashboard/nauczyciel/messages', label: 'Wiadomości', icon: '💬', description: 'Komunikacja' },
+                    { href: '/dashboard/nauczyciel/reports', label: 'Raporty semestralne', icon: '📋', description: 'Raporty grup' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Dane osobowe' },
                     { href: '/dashboard/nauczyciel/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },
                 ];
@@ -71,7 +72,6 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/opiekun/uwagi', label: 'Uwagi', icon: '💬', description: 'Uwagi nauczycieli' },
                     { href: '/dashboard/opiekun/quizy', label: 'Quizy', icon: '🧩', description: 'Wyniki quizów' },
                     { href: '/dashboard/shared_components/students_presence', label: 'Obecności uczniów', icon: '📋', description: 'Śledzenie obecności' },
-                    { href: '/dashboard/nauczyciel/messages', label: 'Wiadomości', icon: '✉️', description: 'Komunikacja' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Twój profil' },
                     { href: '/dashboard/nauczyciel/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },
 
@@ -84,6 +84,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/uczen/grades', label: 'Moje oceny', icon: '🏠', description: 'Zadania domowe' },
                     { href: '/dashboard/uczen/historiazajec', label: 'Zajecia', icon: '📝', description: 'Historia zajęć' },
                     { href: '/dashboard/uczen/quizy', label: 'Quizy', icon: '🧾', description: 'Quizy' },
+                    { href: '/dashboard/uczen/raport', label: 'Mój raport', icon: '📋', description: 'Raport semestralny' },
                     { href: '/dashboard/uczen/prizes', label: 'Punkty i nagrody', icon: '⭐', description: 'Odbierz nagrody za punkty' },
                     { href: '/dashboard/uczen/todolist', label: 'Lista ToDo', icon: '🗒', description: 'Tablica zadan' },
                     { href: '/dashboard/uczen/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },

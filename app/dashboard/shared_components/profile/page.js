@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '/context/AuthContext';
 import { getToken, getUserIdFromToken } from '/lib/auth';
-import { getMyProfile, updateMyProfile } from '/lib/api/users.api';
+import { getMyProfile, updateMyProfile, changePassword } from '/lib/api/users.api';
 import { getStudentById, updateStudent } from '/lib/api/student.api';
 import { getTeacherById, updateTeacher } from '/lib/api/teacher.api';
 import { getGuardianById, updateGuardian } from '/lib/api/guardian.api';
@@ -20,6 +20,12 @@ export default function ProfilePage() {
     const [showUploader, setShowUploader] = useState(false);
     const [editing, setEditing] = useState(false);
     const [formData, setFormData] = useState({});
+    const [changingPassword, setChangingPassword] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
     const router = useRouter();
 
     useEffect(() => {
@@ -43,15 +49,17 @@ export default function ProfilePage() {
                 if (userData.rola === 'uczen') {
                     const studentData = await getStudentById(userId);
                     setRoleData(studentData);
-                    setFormData({ pseudonim: studentData.pseudonim || '' });
+                    setFormData({ email: userData.email || '', pseudonim: studentData.pseudonim || '' });
                 } else if (userData.rola === 'nauczyciel') {
                     const teacherData = await getTeacherById(userId);
                     setRoleData(teacherData);
-                    setFormData({ nr_konta_bankowego: teacherData.nr_konta_bankowego || '' });
+                    setFormData({ email: userData.email || '', nr_konta_bankowego: teacherData.nr_konta_bankowego || '' });
                 } else if (userData.rola === 'opiekun') {
                     const guardianData = await getGuardianById(userId);
                     setRoleData(guardianData);
-                    setFormData({ nr_indy_konta_bankowego: guardianData.nr_indy_konta_bankowego || '' });
+                    setFormData({ email: userData.email || '', nr_indy_konta_bankowego: guardianData.nr_indy_konta_bankowego || '' });
+                } else {
+                    setFormData({ email: userData.email || '' });
                 }
             } catch (err) {
                 console.error('Błąd ładowania profilu:', err);
@@ -101,19 +109,72 @@ export default function ProfilePage() {
         }
     };
 
+    const generatePassword = () => {
+        const length = 12;
+        const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        let password = '';
+        for (let i = 0; i < length; i++) {
+            password += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        setPasswordData({
+            ...passwordData,
+            newPassword: password,
+            confirmPassword: password
+        });
+    };
+
+    const handlePasswordChange = async () => {
+        if (!passwordData.currentPassword) {
+            alert('Podaj aktualne hasło');
+            return;
+        }
+        if (!passwordData.newPassword) {
+            alert('Podaj nowe hasło');
+            return;
+        }
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            alert('Nowe hasła nie są identyczne');
+            return;
+        }
+        if (passwordData.newPassword.length < 6) {
+            alert('Nowe hasło musi mieć co najmniej 6 znaków');
+            return;
+        }
+
+        try {
+            await changePassword({
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
+            alert('Hasło zostało zmienione!');
+            setChangingPassword(false);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (err) {
+            console.error(err);
+            alert('Nie udało się zmienić hasła. Sprawdź aktualne hasło.');
+        }
+    };
+
     const handleSaveChanges = async () => {
         try {
             const userId = getUserIdFromToken();
             
+            // Aktualizuj email jeśli się zmienił
+            if (formData.email !== user.email) {
+                await updateMyProfile({ email: formData.email });
+            }
+            
             if (user.rola === 'uczen') {
                 await updateStudent(userId, { pseudonim: formData.pseudonim });
-                alert('Pseudonim został zaktualizowany!');
+                alert('Dane zostały zaktualizowane!');
             } else if (user.rola === 'nauczyciel') {
                 await updateTeacher(userId, { nr_konta_bankowego: formData.nr_konta_bankowego });
-                alert('Numer konta został zaktualizowany!');
+                alert('Dane zostały zaktualizowane!');
             } else if (user.rola === 'opiekun') {
                 await updateGuardian(userId, { nr_indy_konta_bankowego: formData.nr_indy_konta_bankowego });
-                alert('Numer konta został zaktualizowany!');
+                alert('Dane zostały zaktualizowane!');
+            } else {
+                alert('Email został zaktualizowany!');
             }
             setEditing(false);
             
@@ -138,7 +199,7 @@ export default function ProfilePage() {
 
     if (!user) return <p className="text-center text-gray-500 mt-10">Ładowanie profilu...</p>;
 
-    const canEdit = user.rola !== 'administrator';
+    const canEdit = true; // Każdy może edytować swoje dane
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-gradient-to-b from-gray-50 to-gray-200 p-6">
@@ -207,9 +268,19 @@ export default function ProfilePage() {
                         <p>{user.nazwisko}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2 items-center">
                         <p className="font-semibold">Email:</p>
-                        <p>{user.email}</p>
+                        {editing ? (
+                            <input
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="email@example.com"
+                            />
+                        ) : (
+                            <p>{user.email}</p>
+                        )}
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2">
@@ -298,11 +369,13 @@ export default function ProfilePage() {
                                         onClick={() => {
                                             setEditing(false);
                                             if (user.rola === 'uczen') {
-                                                setFormData({ pseudonim: roleData.pseudonim || '' });
+                                                setFormData({ email: user.email || '', pseudonim: roleData.pseudonim || '' });
                                             } else if (user.rola === 'nauczyciel') {
-                                                setFormData({ nr_konta_bankowego: roleData.nr_konta_bankowego || '' });
+                                                setFormData({ email: user.email || '', nr_konta_bankowego: roleData.nr_konta_bankowego || '' });
                                             } else if (user.rola === 'opiekun') {
-                                                setFormData({ nr_indy_konta_bankowego: roleData.nr_indy_konta_bankowego || '' });
+                                                setFormData({ email: user.email || '', nr_indy_konta_bankowego: roleData.nr_indy_konta_bankowego || '' });
+                                            } else {
+                                                setFormData({ email: user.email || '' });
                                             }
                                         }}
                                         className="bg-gray-500 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition"
@@ -313,6 +386,89 @@ export default function ProfilePage() {
                             )}
                         </div>
                     )}
+
+                    {/* Password Change Section */}
+                    <div className="border-t pt-6 mt-6">
+                        {!changingPassword ? (
+                            <button
+                                onClick={() => setChangingPassword(true)}
+                                className="w-full bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition"
+                            >
+                                Zmień hasło
+                            </button>
+                        ) : (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-800 text-center">Zmiana hasła</h3>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        Aktualne hasło:
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={passwordData.currentPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        placeholder="Wprowadź aktualne hasło"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        Nowe hasło:
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={passwordData.newPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                            placeholder="Wprowadź nowe hasło"
+                                        />
+                                        <button
+                                            onClick={generatePassword}
+                                            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition whitespace-nowrap"
+                                            title="Wygeneruj hasło"
+                                        >
+                                            🎲 Generuj
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">Min. 6 znaków</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        Potwierdź nowe hasło:
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={passwordData.confirmPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        placeholder="Wprowadź ponownie nowe hasło"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 justify-center pt-2">
+                                    <button
+                                        onClick={handlePasswordChange}
+                                        className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition"
+                                    >
+                                        Zmień hasło
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setChangingPassword(false);
+                                            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                                        }}
+                                        className="bg-gray-500 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition"
+                                    >
+                                        Anuluj
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

@@ -236,16 +236,34 @@ export default function UsersManagement() {
     };
 
     const handleAssignToGroup = async (studentId, groupId) => {
+        if (!groupId || groupId === '') {
+            alert('Wybierz grupę');
+            return;
+        }
+        
         try {
-            await enrollStudentToGroup({
-                id_ucznia: studentId,
-                id_grupa: parseInt(groupId)
-            });
+            console.log('Przypisywanie ucznia do grupy:', { studentId, groupId });
+            await enrollStudentToGroup(studentId, parseInt(groupId));
             alert('Uczeń został przypisany do grupy!');
             await loadUsersData();
         } catch (err) {
             console.error('Błąd przypisywania do grupy:', err);
-            alert('Nie udało się przypisać ucznia do grupy');
+            alert('Nie udało się przypisać ucznia do grupy: ' + (err.message || 'Nieznany błąd'));
+        }
+    };
+
+    const handleRemoveFromGroup = async (studentId) => {
+        if (!confirm('Czy na pewno chcesz usunąć przypisanie do grupy?')) {
+            return;
+        }
+        
+        try {
+            await enrollStudentToGroup(studentId, null);
+            alert('Uczeń został usunięty z grupy!');
+            await loadUsersData();
+        } catch (err) {
+            console.error('Błąd usuwania z grupy:', err);
+            alert('Nie udało się usunąć ucznia z grupy: ' + (err.message || 'Nieznany błąd'));
         }
     };
 
@@ -602,9 +620,18 @@ export default function UsersManagement() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {student.id_grupa ? (
-                                                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                                                Grupa #{student.id_grupa}
-                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                                                    Grupa #{student.id_grupa}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => handleRemoveFromGroup(student.id_ucznia)}
+                                                                    className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                                    title="Usuń z grupy"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                            </div>
                                                         ) : (
                                                             <select
                                                                 onChange={(e) => handleAssignToGroup(student.id_ucznia, e.target.value)}
