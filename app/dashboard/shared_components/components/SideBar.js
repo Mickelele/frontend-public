@@ -62,7 +62,6 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/nauczyciel/homework', label: 'Zadania domowe', icon: '📝', description: 'Zadania i prace' },
                     { href: '/dashboard/nauczyciel/reports', label: 'Raporty semestralne', icon: '📋', description: 'Raporty grup' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Dane osobowe' },
-                    { href: '/dashboard/nauczyciel/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },
                 ];
             case 'opiekun':
 
@@ -73,7 +72,6 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/opiekun/quizy', label: 'Quizy', icon: '🧩', description: 'Wyniki quizów' },
                     { href: '/dashboard/shared_components/students_presence', label: 'Obecności uczniów', icon: '📋', description: 'Śledzenie obecności' },
                     { href: '/dashboard/shared_components/profile', label: 'Profil', icon: '👤', description: 'Twój profil' },
-                    { href: '/dashboard/nauczyciel/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },
 
                 ];
             case 'uczen':
@@ -87,7 +85,6 @@ export default function Sidebar({ isOpen, onClose }) {
                     { href: '/dashboard/uczen/raport', label: 'Mój raport', icon: '📋', description: 'Raport semestralny' },
                     { href: '/dashboard/uczen/prizes', label: 'Punkty i nagrody', icon: '⭐', description: 'Odbierz nagrody za punkty' },
                     { href: '/dashboard/uczen/todolist', label: 'Lista ToDo', icon: '🗒', description: 'Tablica zadan' },
-                    { href: '/dashboard/uczen/settings', label: 'Ustawienia', icon: '⚙️', description: 'Ustawienia konta' },
                 ];
             default:
 

@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import logo from '../media/logo/logo.svg';
 
 export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
     const { user, logout, loading } = useAuth();
@@ -29,8 +31,14 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
     return (
         <nav className="w-full bg-white shadow-md p-4 flex items-center justify-between">
             <div className="flex items-center space-x-8">
-                <Link href="/" className="text-2xl font-bold text-blue-600">
-                    MojeLogo
+                <Link href="/" className="flex items-center">
+                    <Image 
+                        src={logo} 
+                        alt="Logo" 
+                        height={30}
+                        width={90}
+                        priority
+                    />
                 </Link>
 
                 {!loading && !user && (
