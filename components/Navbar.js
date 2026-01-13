@@ -29,23 +29,24 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
     };
 
     return (
-        <nav className="w-full bg-white shadow-md p-4 flex items-center justify-between">
+        <nav className="w-full bg-orange-500 shadow-xl p-6 flex items-center justify-between">
             <div className="flex items-center space-x-8">
-                <Link href="/" className="flex items-center">
+                <Link href="/" className="flex items-center hover:scale-105 transition-transform">
                     <Image 
                         src={logo} 
                         alt="Logo" 
-                        height={30}
-                        width={90}
+                        height={35}
+                        width={105}
                         priority
+                        className="filter brightness-0 invert"
                     />
                 </Link>
 
                 {!loading && !user && (
-                    <div className="hidden md:flex space-x-4 text-gray-700 font-medium">
-                        <Link href="/#oferta" className="hover:text-blue-600 transition">Oferta</Link>
-                        <Link href="/#o-nas" className="hover:text-blue-600 transition">O nas</Link>
-                        <Link href="/#lokalizacja" className="hover:text-blue-600 transition">Lokalizacja</Link>
+                    <div className="hidden md:flex space-x-6 text-white font-semibold">
+                        <Link href="/#oferta" className="hover:text-orange-100 transition-colors duration-300 text-lg">Oferta</Link>
+                        <Link href="/#o-nas" className="hover:text-orange-100 transition-colors duration-300 text-lg">O nas</Link>
+                        <Link href="/#lokalizacja" className="hover:text-orange-100 transition-colors duration-300 text-lg">Lokalizacja</Link>
                     </div>
                 )}
             </div>
@@ -53,35 +54,35 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
             <div className="flex items-center space-x-4">
                 {loading ? (
                     <div className="flex items-center space-x-4">
-                        <div className="text-gray-500 text-sm">Weryfikacja...</div>
-                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="text-white text-sm font-medium">Weryfikacja...</div>
+                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 ) : user ? (
                     <>
-                        <div className="hidden md:flex flex-col items-end">
-                            <span className="text-gray-700 font-medium">
+                        <div className="hidden md:flex flex-col items-end bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+                            <span className="text-white font-bold text-lg">
                                 Witaj, {user.imie}
                             </span>
-                            <span className="text-xs text-blue-600 font-medium">
+                            <span className="text-xs text-orange-100 font-semibold">
                                 {getRoleLabel(user.role)}
                             </span>
                         </div>
 
                         <button
                             onClick={toggleSidebar}
-                            className="p-2 rounded-lg hover:bg-gray-100 transition"
+                            className="p-3 rounded-xl hover:bg-white/20 backdrop-blur-sm transition-all duration-300"
                             aria-label="Otwórz menu"
                         >
                             <div className="w-6 h-6 flex flex-col justify-between">
-                                <span className="w-full h-0.5 bg-gray-600 rounded"></span>
-                                <span className="w-full h-0.5 bg-gray-600 rounded"></span>
-                                <span className="w-full h-0.5 bg-gray-600 rounded"></span>
+                                <span className="w-full h-0.5 bg-white rounded"></span>
+                                <span className="w-full h-0.5 bg-white rounded"></span>
+                                <span className="w-full h-0.5 bg-white rounded"></span>
                             </div>
                         </button>
 
                         <button
                             onClick={handleLogout}
-                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition"
+                            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-xl transition-all duration-300 font-semibold border border-white/30"
                         >
                             Wyloguj
                         </button>
@@ -90,13 +91,13 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
                     <>
                         <Link
                             href="/auth/login"
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition"
+                            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-xl transition-all duration-300 font-semibold border border-white/30"
                         >
                             Logowanie
                         </Link>
                         <Link
                             href="/auth/register"
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition"
+                            className="bg-white text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-xl transition-all duration-300 font-bold shadow-lg hover:shadow-xl"
                         >
                             Zapisz się na kurs
                         </Link>

@@ -56,15 +56,15 @@ export default function LoginPage() {
                 error={error}
                 onErrorClear={() => setError('')}
                 footer={
-                    <div className="space-y-3">
-                        <p className="text-center text-gray-600">
+                    <div className="space-y-4">
+                        <p className="text-center text-orange-200 text-lg">
                             Nie masz konta?{' '}
-                            <Link href="/auth/register" className="text-blue-600 hover:underline font-medium">
+                            <Link href="/auth/register" className="text-purple-300 hover:text-purple-100 font-bold underline decoration-2 decoration-purple-400 hover:decoration-purple-200 transition-all duration-300">
                                 Zarejestruj się
                             </Link>
                         </p>
                         <p className="text-center">
-                            <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline font-medium">
+                            <Link href="/auth/forgot-password" className="text-orange-300 hover:text-orange-100 font-semibold underline decoration-2 decoration-orange-400 hover:decoration-orange-200 transition-all duration-300">
                                 Zapomniałeś hasła?
                             </Link>
                         </p>

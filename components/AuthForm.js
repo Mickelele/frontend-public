@@ -40,21 +40,32 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer, error:
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-purple-900 to-orange-900 py-12 px-4 sm:px-6 lg:px-8 relative">
+            
+            <Link 
+                href="/" 
+                className="absolute top-8 left-8 flex items-center space-x-2 text-orange-300 hover:text-orange-100 transition-colors duration-300 group"
+            >
+                <svg className="w-6 h-6 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="font-semibold text-lg">Powrót na stronę główną</span>
+            </Link>
+            
             <div className="max-w-md w-full space-y-8 animate-fade-in">
                 <div className="text-center">
-                    <h2 className="mt-6 text-3xl font-bold text-gray-900">
+                    <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-purple-500 bg-clip-text text-transparent">
                         {submitLabel}
                     </h2>
-                    <p className="mt-2 text-sm text-gray-600">
+                    <p className="mt-3 text-lg text-orange-200">
                         Wypełnij poniższe pola, aby kontynuować
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
+                <form onSubmit={handleSubmit} className="bg-black/80 backdrop-blur-lg border border-orange-500/30 p-8 rounded-3xl shadow-2xl space-y-6">
                     {fields.map((field, index) => (
-                        <div key={field.name} className="space-y-1">
-                            <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">
+                        <div key={field.name} className="space-y-2">
+                            <label htmlFor={field.name} className="block text-lg font-bold text-orange-300">
                                 {field.label}
                             </label>
                             <input
@@ -66,14 +77,14 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer, error:
                                 onChange={handleChange}
                                 disabled={isLoading}
                                 ref={index === 0 ? firstInputRef : null}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                className="w-full px-6 py-4 bg-black/70 border-2 border-purple-500/50 text-white placeholder-orange-300/70 rounded-2xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 focus:outline-none transition-all duration-300"
                                 required
                             />
                         </div>
                     ))}
 
                     {displayError && (
-                        <div className="text-red-600 text-sm mt-1">
+                        <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-2xl text-center font-semibold">
                             {displayError}
                         </div>
                     )}
@@ -81,11 +92,11 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer, error:
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-2 px-4 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                        className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-purple-600 text-white rounded-2xl font-bold text-lg hover:from-orange-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center shadow-2xl hover:shadow-orange-500/30 transform hover:scale-[1.02]"
                     >
                         {isLoading ? (
                             <svg
-                                className="animate-spin h-5 w-5 text-white mr-2"
+                                className="animate-spin h-6 w-6 text-white mr-3"
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
                                 viewBox="0 0 24 24"
@@ -108,7 +119,7 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer, error:
                         {isLoading ? 'Przetwarzanie...' : submitLabel}
                     </button>
 
-                    {footer && <div className="mt-4 text-center">{footer}</div>}
+                    {footer && <div className="mt-6 text-center">{footer}</div>}
                 </form>
             </div>
         </div>

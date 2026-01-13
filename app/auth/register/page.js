@@ -26,9 +26,9 @@ export default function RegisterPage() {
             onSubmit={onSubmit}
             submitLabel="Zarejestruj"
             footer={
-                <p className="text-gray-600 text-center">
+                <p className="text-orange-200 text-center text-lg">
                     Masz już konto?{' '}
-                    <Link href="/auth/login" className="text-blue-600 hover:underline font-medium">
+                    <Link href="/auth/login" className="text-purple-300 hover:text-purple-100 font-bold underline decoration-2 decoration-purple-400 hover:decoration-purple-200 transition-all duration-300">
                         Zaloguj się
                     </Link>
                 </p>

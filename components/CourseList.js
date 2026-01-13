@@ -1,15 +1,22 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCourses, getCourseGroups } from '../lib/api/course.api';
-import { getToken } from '../lib/auth';
 
-export default function CourseListPage() {
+export default function CourseList() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [visibleGroups, setVisibleGroups] = useState({});
     const router = useRouter();
+
+    
+    const courseImages = {
+        python: '/grafiki/python.png',
+        roblox: '/grafiki/roblox.jpg',
+        'strony internetowe': '/grafiki/strony.jpg',
+        scratch: '/grafiki/scratch.jpg',
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -23,8 +30,8 @@ export default function CourseListPage() {
                 );
                 setCourses(kursyZGrupami);
             } catch (err) {
-                console.error('Błąd pobierania kursów:', err);
-                setError(err.message);
+                console.error(err);
+                setError('Nie udało się pobrać kursów');
             } finally {
                 setLoading(false);
             }
@@ -32,77 +39,52 @@ export default function CourseListPage() {
         fetchData();
     }, []);
 
-    const toggleGroups = (kursId) => {
-        setVisibleGroups((prev) => ({
-            ...prev,
-            [kursId]: !prev[kursId],
-        }));
+    const handleCourseClick = (id) => {
+        router.push(`/courses/${id}`);
     };
 
-    const goToGroupPage = (courseId, groupId) => {
-        const token = getToken();
-
-        if (!token) {
-            alert('Zaloguj się lub utwórz konto, aby zapisać ucznia na kurs!');
-            router.push('/auth/login');
-            return;
-        }
-
-        router.push(`/courses/${courseId}/groups/${groupId}`);
-    };
-
-    if (loading) return <p className="text-center mt-10 text-gray-500">Ładowanie kursów...</p>;
-    if (error) return <p className="text-center mt-10 text-red-500">Błąd: {error}</p>;
+    if (loading) return <p className="text-white text-center mt-10">Ładowanie kursów...</p>;
+    if (error) return <p className="text-red-500 text-center mt-10">{error}</p>;
 
     return (
-        <div className="grid md:grid-cols-2 gap-6">
-            {courses.length === 0 && <p className="text-center text-gray-500">Brak kursów do wyświetlenia</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {courses.slice(0, 4).map((course) => {
+                const rawName = course.name || course.nazwa || course.nazwa_kursu || '';
+                const name = rawName.toLowerCase();
+                let imageSrc = '/grafiki/python.png';
+                if (name.includes('pierwsze kroki')) imageSrc = courseImages['scratch'];
+                else if (name.includes('python')) imageSrc = courseImages['python'];
+                else if (name.includes('roblox')) imageSrc = courseImages['roblox'];
+                else if (name.includes('strony')) imageSrc = courseImages['strony internetowe'];
+                else if (name.includes('scratch')) imageSrc = courseImages['scratch'];
 
-            {courses.map((kurs) => (
-                <div
-                    key={kurs.id_kursu}
-                    className="bg-white shadow-md rounded-lg p-5 border border-gray-200 hover:shadow-lg transition-shadow"
-                >
+                return (
                     <div
-                        onClick={() => toggleGroups(kurs.id_kursu)}
-                        className="cursor-pointer"
+                        key={course.id_kursu}
+                        className="bg-neutral-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center transition hover:scale-105 hover:shadow-orange-400/30 border-2 border-neutral-800 w-full max-w-[420px] min-w-[280px] mx-auto"
                     >
-                        <h2 className="text-xl font-semibold mb-2">{kurs.nazwa_kursu}</h2>
-                        <p className="text-gray-600 mb-2">
-                            <span className="font-medium">Data rozpoczęcia:</span> {kurs.data_rozpoczecia} |{' '}
-                            <span className="font-medium">Data zakończenia:</span> {kurs.data_zakonczenia}
-                        </p>
-                        <p className="text-sm text-blue-600 hover:underline">
-                            {visibleGroups[kurs.id_kursu] ? 'Ukryj grupy' : 'Pokaż grupy'}
-                        </p>
-                    </div>
-
-                    {visibleGroups[kurs.id_kursu] && (
-                        <div className="mt-3 space-y-3">
-                            {kurs.grupy && kurs.grupy.length > 0 ? (
-                                kurs.grupy.map((grupa) => (
-                                    <div
-                                        key={grupa.id_grupa}
-                                        onClick={() => goToGroupPage(kurs.id_kursu, grupa.id_grupa)}
-                                        className="p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-blue-50 cursor-pointer transition"
-                                    >
-                                        <p className="font-semibold">Grupa {grupa.id_grupa}</p>
-                                        <p className="text-sm text-gray-600">
-                                            Nauczyciel: {grupa.nauczyciel.uzytkownik.imie}{' '}
-                                            {grupa.nauczyciel.uzytkownik.nazwisko}
-                                        </p>
-                                        <p className="text-sm text-gray-600">
-                                            Liczba uczniów: {grupa.liczba_uczniow}
-                                        </p>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-gray-500">Brak grup dla tego kursu</p>
-                            )}
+                        <img
+                            src={imageSrc}
+                            alt={rawName}
+                            className="w-full h-56 object-cover"
+                        />
+                        <div className="flex flex-col flex-grow p-7 w-full">
+                            <h3 className="text-2xl font-bold text-orange-400 mb-4 text-center">
+                                {rawName || 'Brak nazwy'}
+                            </h3>
+                            <p className="text-white text-base mb-7 text-center flex-grow">
+                                {course.description}
+                            </p>
+                            <button
+                                className="w-full px-7 py-3 bg-gradient-to-r from-orange-500 to-purple-500 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition"
+                                onClick={() => handleCourseClick(course.id_kursu)}
+                            >
+                                Zapisz się na kurs
+                            </button>
                         </div>
-                    )}
-                </div>
-            ))}
+                    </div>
+                );
+            })}
         </div>
     );
 }

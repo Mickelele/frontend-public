@@ -134,7 +134,6 @@ export default function Sidebar({ isOpen, onClose }) {
                         <div>
                             <h2 className="text-xl font-bold text-gray-800">{getSidebarTitle()}</h2>
                             <p className="text-sm text-gray-600 mt-1">Witaj, {user.imie}!</p>
-
                             <p className="text-xs text-gray-400">Rola: {user.role}</p>
                         </div>
                         <button

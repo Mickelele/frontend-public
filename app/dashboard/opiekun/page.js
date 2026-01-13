@@ -206,37 +206,59 @@ export default function GuardianDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-xl text-gray-600">Ładowanie...</div>
+            <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="bg-white rounded-3xl shadow-2xl p-12 border border-orange-200">
+                        <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mb-6"></div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Ładowanie dashboard...</h2>
+                        <p className="text-gray-600">Pobieranie danych o Twoich podopiecznych</p>
+                    </div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="p-8">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50">
+            <div className="p-6 max-w-7xl mx-auto">
+                {/* Header z gradient */}
                 <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        Witaj, {user?.imie}! 👋
-                    </h1>
-                    <p className="text-gray-600 mt-2">
-                        Panel opiekuna - przegląd aktywności Twoich podopiecznych
-                    </p>
-                    <div className="mt-4 flex items-center gap-4">
-                        <span className="text-sm text-gray-600">
-                            👥 Liczba uczniów: <span className="font-bold text-blue-600">{students.length}</span>
-                        </span>
+                    <div className="bg-gradient-to-r from-orange-500 to-purple-600 rounded-3xl shadow-2xl p-8 text-white">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-white/20 p-3 rounded-2xl">
+                                <span className="text-3xl">👋</span>
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold">
+                                    Witaj, {user?.imie}!
+                                </h1>
+                                <p className="text-white/90 text-lg mt-1">
+                                    Panel opiekuna - przegląd aktywności Twoich podopiecznych
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                            <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-2xl">👥</span>
+                                    <span className="text-sm text-white/90">Liczba uczniów:</span>
+                                    <span className="font-bold text-white text-lg">{students.length}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     {/* Wybór ucznia */}
-                    <div className="mt-6 bg-white p-4 rounded-lg shadow-md">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <div className="mt-6 bg-white rounded-2xl shadow-xl p-6 border border-orange-100">
+                        <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <span className="text-lg">🎯</span>
                             Wybierz ucznia:
                         </label>
                         <select
                             value={selectedStudent || ''}
                             onChange={(e) => setSelectedStudent(e.target.value ? parseInt(e.target.value) : null)}
-                            className="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full md:w-96 px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 bg-white shadow-sm transition"
                         >
                             {students.map((student) => (
                                 <option key={student.id_ucznia} value={student.id_ucznia}>
@@ -248,82 +270,143 @@ export default function GuardianDashboard() {
                     </div>
                 </header>
 
-                {/* Lista uczniów z frekwencją */}
-                <section className="mb-8">
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-4">📊 Twoi podopieczni</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {students.map((student) => {
-                            const studentPresence = allPresence.filter(p => p.id_ucznia === student.id_ucznia);
-                            const totalClasses = studentPresence.length;
-                            const presentCount = studentPresence.filter(p => p.czyObecny === 1 || p.czyObecny === true).length;
-                            const attendancePercent = totalClasses > 0 
-                                ? ((presentCount / totalClasses) * 100).toFixed(1)
-                                : 0;
-                            
-                            return (
-                                <div key={student.id_ucznia} className="bg-white p-4 rounded-lg shadow-md">
-                                    <h3 className="font-bold text-lg text-gray-800">
-                                        {student.user?.imie} {student.user?.nazwisko}
-                                        {student.pseudonim && <span className="text-sm text-gray-500"> ({student.pseudonim})</span>}
-                                    </h3>
-                                    <div className="mt-2">
-                                        <span className="text-sm text-gray-600">Frekwencja: </span>
-                                        <span className={`font-bold ${
-                                            attendancePercent >= 80 ? 'text-green-600' :
-                                            attendancePercent >= 60 ? 'text-yellow-600' :
-                                            'text-red-600'
-                                        }`}>
-                                            {attendancePercent}%
-                                        </span>
-                                        <span className="text-xs text-gray-500 ml-2">
-                                            ({presentCount}/{totalClasses})
-                                        </span>
+                {/* Bento Grid Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    {/* Lista uczniów z frekwencją - duża karta */}
+                    <section className="lg:col-span-8 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">📊</span>
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800">Twoi podopieczni</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {students.map((student) => {
+                                const studentPresence = allPresence.filter(p => p.id_ucznia === student.id_ucznia);
+                                const totalClasses = studentPresence.length;
+                                const presentCount = studentPresence.filter(p => p.czyObecny === 1 || p.czyObecny === true).length;
+                                const attendancePercent = totalClasses > 0 
+                                    ? ((presentCount / totalClasses) * 100).toFixed(1)
+                                    : 0;
+                                
+                                return (
+                                    <div key={student.id_ucznia} className="bg-gradient-to-br from-orange-50 to-purple-50 p-5 rounded-2xl border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition duration-300">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold">
+                                                {student.user?.imie?.[0]}{student.user?.nazwisko?.[0]}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-gray-800">
+                                                    {student.user?.imie} {student.user?.nazwisko}
+                                                </h3>
+                                                {student.pseudonim && (
+                                                    <span className="text-sm text-gray-500">({student.pseudonim})</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white rounded-xl p-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600">Frekwencja:</span>
+                                                <span className={`font-bold text-lg ${
+                                                    attendancePercent >= 80 ? 'text-green-600' :
+                                                    attendancePercent >= 60 ? 'text-yellow-600' :
+                                                    'text-red-600'
+                                                }`}>
+                                                    {attendancePercent}%
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {presentCount}/{totalClasses} zajęć
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </section>
+                                );
+                            })}
+                        </div>
+                    </section>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Quick stats */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl shadow-xl p-6 text-white">
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl">📈</span>
+                                <div>
+                                    <h3 className="font-bold text-lg">Średnia frekwencja</h3>
+                                    <p className="text-2xl font-bold mt-1">
+                                        {students.length > 0 ? 
+                                            Math.round(students.reduce((acc, student) => {
+                                                const studentPresence = allPresence.filter(p => p.id_ucznia === student.id_ucznia);
+                                                const percent = studentPresence.length > 0 
+                                                    ? (studentPresence.filter(p => p.czyObecny).length / studentPresence.length) * 100
+                                                    : 0;
+                                                return acc + percent;
+                                            }, 0) / students.length) : 0
+                                        }%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl shadow-xl p-6 text-white">
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl">📚</span>
+                                <div>
+                                    <h3 className="font-bold text-lg">Prace do sprawdzenia</h3>
+                                    <p className="text-2xl font-bold mt-1">
+                                        {filteredHomeworks.filter(hw => {
+                                            const studentAnswer = hw.odpowiedzi?.find(odp => odp.id_ucznia === selectedStudent);
+                                            return studentAnswer && !studentAnswer.ocena;
+                                        }).length}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Ostatnie obecności */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-gray-800">📋 Ostatnie obecności</h3>
-                            <Link href="/dashboard/shared_components/students_presence" className="text-sm text-blue-600 hover:underline">
+                    <div className="lg:col-span-6 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                    <span className="text-white text-xl">📋</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-800">Ostatnie obecności</h3>
+                            </div>
+                            <Link href="/dashboard/shared_components/students_presence" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
                                 Zobacz wszystkie
                             </Link>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {latestPresence.length > 0 ? (
                                 latestPresence.map((presenceItem) => {
                                     const student = getStudentForPresence(presenceItem);
                                     return (
                                         <div
                                             key={presenceItem.id_obecnosci}
-                                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                                            className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-xl border border-orange-200 hover:border-orange-400 transition"
                                         >
-                                            <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                                <span className={`flex-shrink-0 w-3 h-3 rounded-full ${
+                                            <div className="flex items-center space-x-4 flex-1 min-w-0">
+                                                <div className={`w-4 h-4 rounded-full flex-shrink-0 ${
                                                     presenceItem.czyObecny ? 'bg-green-500' : 'bg-red-500'
-                                                }`}></span>
+                                                }`}></div>
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="font-medium text-sm text-gray-800 truncate">
+                                                    <div className="font-semibold text-gray-800 truncate">
                                                         {student?.user?.imie} {student?.user?.nazwisko}
                                                     </div>
-                                                    <div className="text-xs text-gray-500 truncate">
+                                                    <div className="text-sm text-gray-600 truncate">
                                                         {presenceItem.zajecia?.tematZajec || 'Brak tematu'}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="text-right ml-3 flex-shrink-0">
-                                                <div className="text-xs text-gray-600">
+                                                <div className="text-sm text-gray-600">
                                                     {presenceItem.zajecia?.data
                                                         ? new Date(presenceItem.zajecia.data).toLocaleDateString('pl-PL')
                                                         : 'Brak daty'}
                                                 </div>
-                                                <div className={`text-xs font-medium ${
-                                                    presenceItem.czyObecny ? 'text-green-600' : 'text-red-600'
+                                                <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                                                    presenceItem.czyObecny ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                 }`}>
                                                     {presenceItem.czyObecny ? 'Obecny' : 'Nieobecny'}
                                                 </div>
@@ -332,7 +415,8 @@ export default function GuardianDashboard() {
                                     );
                                 })
                             ) : (
-                                <div className="text-center text-gray-500 py-8">
+                                <div className="text-center text-gray-500 py-12 bg-gray-50 rounded-2xl">
+                                    <span className="text-4xl block mb-2">📭</span>
                                     Brak danych o obecnościach
                                 </div>
                             )}
@@ -340,38 +424,44 @@ export default function GuardianDashboard() {
                     </div>
 
                     {/* Prace domowe */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">📚 Prace domowe</h3>
-                        <div className="space-y-2">
+                    <div className="lg:col-span-6 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">📚</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Prace domowe</h3>
+                        </div>
+                        <div className="space-y-3">
                             {filteredHomeworks.length > 0 ? (
                                 filteredHomeworks.slice(0, 6).map(hw => {
                                     const studentAnswer = hw.odpowiedzi?.find(odp => odp.id_ucznia === selectedStudent);
                                     const isSubmitted = !!studentAnswer;
                                     const isGraded = studentAnswer && studentAnswer.ocena !== null && studentAnswer.ocena !== undefined;
                                     return (
-                                        <div key={hw.id_zadania} className={`p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition border-l-4 ${
-                                            isGraded ? 'border-green-500' :
-                                            isSubmitted ? 'border-yellow-500' :
-                                            'border-red-500'
+                                        <div key={hw.id_zadania} className={`p-4 bg-gradient-to-r rounded-2xl border-2 transition hover:shadow-lg ${
+                                            isGraded ? 'from-green-50 to-green-100 border-green-300' :
+                                            isSubmitted ? 'from-yellow-50 to-yellow-100 border-yellow-300' :
+                                            'from-red-50 to-red-100 border-red-300'
                                         }`}>
                                             <div className="flex justify-between items-start">
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-sm text-gray-800">
+                                                    <div className="font-semibold text-gray-800 mb-2">
                                                         {hw.tytul || hw.zadanie?.tytul || 'Brak tytułu'}
                                                     </div>
-                                                    <div className="text-xs text-gray-500 mt-1">
+                                                    <div className="text-sm text-gray-600 flex items-center gap-2">
+                                                        <span>📅</span>
                                                         Termin: {hw.termin ? new Date(hw.termin).toLocaleDateString('pl-PL') : 'Brak'}
                                                     </div>
                                                 </div>
                                                 <div className="ml-3 flex-shrink-0">
                                                     {!isSubmitted && (
-                                                        <span className="text-xs text-red-600 font-semibold">Do wykonania</span>
+                                                        <span className="px-3 py-1 bg-red-200 text-red-800 text-xs font-bold rounded-full">Do wykonania</span>
                                                     )}
                                                     {isSubmitted && !isGraded && (
-                                                        <span className="text-xs text-orange-600 font-semibold">Oczekuje na ocenę</span>
+                                                        <span className="px-3 py-1 bg-yellow-200 text-yellow-800 text-xs font-bold rounded-full">Oczekuje na ocenę</span>
                                                     )}
                                                     {isGraded && (
-                                                        <span className="text-sm font-bold text-green-600">Ocenione: {studentAnswer.ocena}</span>
+                                                        <span className="px-3 py-1 bg-green-200 text-green-800 text-sm font-bold rounded-full">Ocenione: {studentAnswer.ocena}</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -379,7 +469,8 @@ export default function GuardianDashboard() {
                                     );
                                 })
                             ) : (
-                                <div className="text-center text-gray-500 py-8">
+                                <div className="text-center text-gray-500 py-12 bg-gray-50 rounded-2xl">
+                                    <span className="text-4xl block mb-2">📝</span>
                                     Brak prac domowych
                                 </div>
                             )}
@@ -387,40 +478,55 @@ export default function GuardianDashboard() {
                     </div>
 
                     {/* Nadchodzące zajęcia */}
-                    <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">📅 Nadchodzące zajęcia</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="lg:col-span-8 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">📅</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Nadchodzące zajęcia</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredLessons.length > 0 ? (
                                 filteredLessons.map((lesson) => (
-                                    <div key={lesson.id_zajec} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                                        <div className="font-medium text-sm text-gray-800 truncate">
+                                    <div key={lesson.id_zajec} className="p-5 bg-gradient-to-br from-orange-50 to-purple-50 rounded-2xl border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition">
+                                        <div className="font-semibold text-gray-800 mb-3">
                                             {lesson.tematZajec || lesson.temat || 'Temat nieznany'}
                                         </div>
-                                        <div className="text-xs text-gray-600 mt-1">
-                                            📅 {new Date(lesson.data).toLocaleDateString('pl-PL')}
-                                        </div>
-                                        {lesson.Sala_id_sali && (
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                🚪 Sala {lesson.Sala_id_sali}
+                                        <div className="space-y-2">
+                                            <div className="text-sm text-gray-600 flex items-center gap-2">
+                                                <span className="text-orange-500">📅</span>
+                                                {new Date(lesson.data).toLocaleDateString('pl-PL')}
                                             </div>
-                                        )}
+                                            {lesson.Sala_id_sali && (
+                                                <div className="text-sm text-gray-600 flex items-center gap-2">
+                                                    <span className="text-orange-500">🚪</span>
+                                                    Sala {lesson.Sala_id_sali}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             ) : (
-                                <div className="col-span-full text-center text-gray-500 py-8">
+                                <div className="col-span-full text-center text-gray-500 py-12 bg-gray-50 rounded-2xl">
+                                    <span className="text-4xl block mb-2">📭</span>
                                     Brak nadchodzących zajęć
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Lista uczniów */}
-                    <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                            👥 {selectedStudent ? 'Wybrany uczeń' : 'Twoi podopieczni'}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {(selectedStudent ? students.filter(s => s.id_ucznia === selectedStudent) : students).map((student) => {
+                    {/* Szczegóły wybranego ucznia */}
+                    <div className="lg:col-span-4 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">👤</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">
+                                {selectedStudent ? 'Wybrany uczeń' : 'Twoi podopieczni'}
+                            </h3>
+                        </div>
+                        <div className="space-y-4">
+                            {(selectedStudent ? students.filter(s => s.id_ucznia === selectedStudent) : students.slice(0, 3)).map((student) => {
                                 const studentPresence = presence[student.id_ucznia] || [];
                                 const attendanceCount = studentPresence.filter(p => p.czyObecny).length;
                                 const totalCount = studentPresence.length;
@@ -429,30 +535,44 @@ export default function GuardianDashboard() {
                                     : 0;
 
                                 return (
-                                    <div key={student.id_ucznia} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                                        <div className="font-medium text-gray-800">
-                                            {student.user?.imie} {student.user?.nazwisko}
-                                        </div>
-                                        {student.pseudonim && (
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                ({student.pseudonim})
+                                    <div key={student.id_ucznia} className="p-5 bg-gradient-to-br from-orange-50 to-purple-50 rounded-2xl border-2 border-orange-200 hover:border-orange-400 transition">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold">
+                                                {student.user?.imie?.[0]}{student.user?.nazwisko?.[0]}
                                             </div>
-                                        )}
-                                        <div className="mt-2 flex items-center justify-between text-xs">
-                                            <span className="text-gray-600">Obecność:</span>
-                                            <span className={`font-bold ${
-                                                attendancePercent >= 80 ? 'text-green-600' : 
-                                                attendancePercent >= 60 ? 'text-yellow-600' : 'text-red-600'
-                                            }`}>
-                                                {attendancePercent}%
-                                            </span>
+                                            <div>
+                                                <div className="font-semibold text-gray-800">
+                                                    {student.user?.imie} {student.user?.nazwisko}
+                                                </div>
+                                                {student.pseudonim && (
+                                                    <div className="text-sm text-gray-500">
+                                                        ({student.pseudonim})
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-gray-500 mt-1">
-                                            {attendanceCount}/{totalCount} zajęć
+                                        <div className="bg-white rounded-xl p-3">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-sm text-gray-600">Obecność:</span>
+                                                <span className={`font-bold text-lg ${
+                                                    attendancePercent >= 80 ? 'text-green-600' : 
+                                                    attendancePercent >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                                }`}>
+                                                    {attendancePercent}%
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {attendanceCount}/{totalCount} zajęć
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })}
+                            {!selectedStudent && students.length > 3 && (
+                                <div className="text-center text-gray-500 text-sm">
+                                    i {students.length - 3} więcej...
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

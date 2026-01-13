@@ -157,76 +157,104 @@ export default function StudentDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-xl text-gray-600">Ładowanie...</div>
+            <div className="min-h-screen bg-gradient-to-br from-black via-purple-900 to-orange-900 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-500 border-t-transparent mb-4 mx-auto"></div>
+                    <div className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-purple-500 bg-clip-text text-transparent">Ładowanie dashboardu...
+                    </div>
+                </div>
             </div>
         );
     }
 
     if (!studentData?.id_grupa) {
         return (
-            <div className="min-h-screen bg-gray-50 p-8">
-                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded">
-                    <p className="font-bold">Nie przypisano do grupy</p>
-                    <p>Skontaktuj się z administratorem, aby przypisać Cię do grupy.</p>
+            <div className="min-h-screen bg-gradient-to-br from-black via-purple-900 to-orange-900 p-8">
+                <div className="max-w-2xl mx-auto">
+                    <div className="bg-orange-900/50 border border-orange-500 text-orange-200 p-6 rounded-3xl backdrop-blur-lg">
+                        <div className="flex items-center gap-4 mb-4">
+                            <span className="text-4xl">⚠️</span>
+                            <div>
+                                <p className="font-bold text-xl text-orange-300">Nie przypisano do grupy</p>
+                                <p className="text-orange-200">Skontaktuj się z administratorem, aby przypisaić Cię do grupy.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-black via-purple-900 to-orange-900">
             <div className="p-8">
                 {/* Header */}
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        Witaj, {user?.imie}! 👋
-                    </h1>
-                    <p className="text-gray-600 mt-2">
-                        Twój pulpit ucznia
-                    </p>
-                    <div className="mt-3 flex items-center gap-4">
-                        <span className="text-sm text-gray-600">
-                            💎 Punkty: <span className="font-bold text-blue-600">{studentPoints}</span>
-                        </span>
+                <header className="mb-8 text-center">
+                    <div className="inline-block bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl p-8 shadow-2xl">
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-purple-500 bg-clip-text text-transparent mb-3">
+                            Witaj, {user?.imie}! 👋
+                        </h1>
+                        <p className="text-orange-200 text-lg mb-4">
+                            Twój pulpit ucznia
+                        </p>
+                        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-purple-600 text-white px-6 py-3 rounded-2xl font-bold text-lg">
+                            <span>📎 Punkty:</span>
+                            <span className="text-2xl">{studentPoints}</span>
+                        </div>
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Nadchodzące zajęcia */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-gray-800">📅 Nadchodzące zajęcia</h3>
-                            <Link href="/dashboard/uczen/historiazajec" className="text-sm text-blue-600 hover:underline">
+                    <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                    <span className="text-white text-xl">📅</span>
+                                </div>
+                                <h3 className="text-2xl font-bold text-white">Nadchodzące zajęcia</h3>
+                            </div>
+                            <Link href="/dashboard/uczen/historiazajec" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
                                 Zobacz wszystkie
                             </Link>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {upcomingLessons.length > 0 ? (
                                 upcomingLessons.map((lesson) => (
-                                    <div key={lesson.id_zajec} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                                    <div key={lesson.id_zajec} className="p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-2xl border border-orange-200 hover:border-orange-400 transition">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
-                                                <div className="font-medium text-gray-800">
+                                                <div className="font-bold text-gray-800 text-lg">
                                                     {lesson.tematZajec || lesson.temat || 'Temat nieznany'}
                                                 </div>
-                                                <div className="text-sm text-gray-600 mt-1">
+                                                <div className="text-sm text-orange-700 mt-2 flex items-center gap-4">
                                                     {lesson.sala && (
-                                                        <span>
-                                                            📍 {lesson.sala.lokalizacja || ''}
+                                                        <span className="flex items-center gap-1">
+                                                            <span>📍</span>
+                                                            {lesson.sala.lokalizacja || ''}
                                                             {lesson.sala.lokalizacja && lesson.sala.numer && ' - '}
                                                             {lesson.sala.numer && `Sala ${lesson.sala.numer}`}
                                                         </span>
                                                     )}
-                                                    {!lesson.sala && lesson.Sala_id_sali && `🚪 Sala ${lesson.Sala_id_sali}`}
-                                                    {lesson.grupa?.godzina && ` • 🕐 ${lesson.grupa.godzina.substring(0, 5)}`}
+                                                    {!lesson.sala && lesson.Sala_id_sali && (
+                                                        <span className="flex items-center gap-1">
+                                                            <span>🚪</span>
+                                                            Sala {lesson.Sala_id_sali}
+                                                        </span>
+                                                    )}
+                                                    {lesson.grupa?.godzina && (
+                                                        <span className="flex items-center gap-1">
+                                                            <span>🕐</span>
+                                                            {lesson.grupa.godzina.substring(0, 5)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="text-right ml-3">
-                                                <div className="text-sm font-medium text-blue-600">
+                                            <div className="text-right ml-4 bg-white/70 rounded-xl p-3">
+                                                <div className="text-lg font-bold text-purple-700">
                                                     {new Date(lesson.data).toLocaleDateString('pl-PL')}
                                                 </div>
-                                                <div className="text-xs text-gray-500">
+                                                <div className="text-sm text-orange-600 font-semibold">
                                                     {lesson.grupa?.dzien_tygodnia || ''}
                                                 </div>
                                             </div>
@@ -234,7 +262,8 @@ export default function StudentDashboard() {
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center text-gray-500 py-8">
+                                <div className="text-center text-orange-200 py-12 bg-orange-900/30 rounded-2xl">
+                                    <span className="text-4xl block mb-2">📅</span>
                                     Brak nadchodzących zajęć
                                 </div>
                             )}
@@ -242,57 +271,64 @@ export default function StudentDashboard() {
                     </div>
 
                     {/* Dostępne nagrody */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-gray-800">🎁 Dostępne nagrody</h3>
-                            <Link href="/dashboard/uczen/prizes" className="text-sm text-blue-600 hover:underline">
+                    <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                    <span className="text-white text-xl">🎁</span>
+                                </div>
+                                <h3 className="text-2xl font-bold text-white">Dostępne nagrody</h3>
+                            </div>
+                            <Link href="/dashboard/uczen/prizes" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
                                 Zobacz wszystkie
                             </Link>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                             {availablePrizes.length > 0 ? (
                                 availablePrizes.slice(0, 6).map((prize) => {
                                     const isOwned = myPrizes.some(mp => mp.id_nagrody === prize.id_nagrody);
                                     const prizeCost = Number(prize.koszt_punktow || prize.koszt || 0);
                                     return (
-                                        <div key={prize.id_nagrody} className="relative p-3 bg-gray-50 rounded-lg text-center hover:bg-gray-100 transition">
+                                        <div key={prize.id_nagrody} className="relative p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-2xl text-center hover:from-orange-100 hover:to-purple-100 transition border border-orange-200">
                                             {isOwned && (
-                                                <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                                <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg">
                                                     ✓
                                                 </div>
                                             )}
-                                            <div className="h-16 flex items-center justify-center mb-2">
+                                            <div className="h-16 flex items-center justify-center mb-3">
                                                 {prize.zdjecie ? (
                                                     <img 
                                                         src={getPrizeImageUrl(prize.id_nagrody)} 
                                                         alt={prize.nazwa}
-                                                        className="max-h-16 max-w-full object-contain"
+                                                        className="max-h-16 max-w-full object-contain rounded-lg"
                                                         onError={(e) => {
                                                             e.target.style.display = 'none';
                                                             const parent = e.target.parentElement;
                                                             if (parent && !parent.querySelector('.fallback-emoji')) {
                                                                 const emoji = document.createElement('div');
-                                                                emoji.className = 'fallback-emoji text-2xl';
+                                                                emoji.className = 'fallback-emoji text-3xl';
                                                                 emoji.textContent = '🎁';
                                                                 parent.appendChild(emoji);
                                                             }
                                                         }}
                                                     />
                                                 ) : (
-                                                    <div className="text-2xl">🎁</div>
+                                                    <div className="text-3xl">🎁</div>
                                                 )}
                                             </div>
-                                            <div className="font-medium text-sm text-gray-800 truncate">
+                                            <div className="font-bold text-gray-800 text-sm mb-2 truncate">
                                                 {prize.nazwa}
                                             </div>
-                                            <div className="text-xs text-blue-600 font-bold mt-1">
-                                                💎 {prizeCost} pkt
+                                            <div className="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                                <span>💎</span>
+                                                {prizeCost} pkt
                                             </div>
                                         </div>
                                     );
                                 })
                             ) : (
-                                <div className="col-span-2 text-center text-gray-500 py-8">
+                                <div className="col-span-2 text-center text-orange-200 py-12 bg-orange-900/30 rounded-2xl">
+                                    <span className="text-4xl block mb-2">🎁</span>
                                     Brak dostępnych nagród
                                 </div>
                             )}
@@ -300,39 +336,44 @@ export default function StudentDashboard() {
                     </div>
 
                     {/* Quizy */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-gray-800">📝 Quizy</h3>
-                            <Link href="/dashboard/uczen/quizy" className="text-sm text-blue-600 hover:underline">
+                    <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                    <span className="text-white text-xl">📝</span>
+                                </div>
+                                <h3 className="text-2xl font-bold text-white">Quizy</h3>
+                            </div>
+                            <Link href="/dashboard/uczen/quizy" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
                                 Zobacz wszystkie
                             </Link>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {quizzes.length > 0 ? (
                                 quizzes.slice(0, 5).map((quiz) => {
                                     const result = getQuizResult(quiz.id_quizu);
                                     const maxPoints = quizMaxPoints[quiz.id_quizu] || '?';
                                     return (
-                                        <div key={quiz.id_quizu} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                                        <div key={quiz.id_quizu} className="p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-2xl border border-orange-200 hover:border-orange-400 transition">
                                             <div className="flex justify-between items-center">
                                                 <div className="flex-1">
-                                                    <div className="font-medium text-gray-800">
+                                                    <div className="font-bold text-gray-800 text-lg">
                                                         {quiz.nazwa || quiz.tytul}
                                                     </div>
                                                 </div>
-                                                <div className="ml-3 text-right">
+                                                <div className="ml-4">
                                                     {result ? (
-                                                        <div className="bg-green-100 px-3 py-2 rounded-lg">
-                                                            <div className="text-xs font-bold text-green-700">
+                                                        <div className="bg-green-100 border-2 border-green-400 px-4 py-3 rounded-2xl text-center">
+                                                            <div className="text-sm font-bold text-green-700 mb-1">
                                                                 ✓ Ukończono
                                                             </div>
-                                                            <div className="text-sm font-bold text-green-600">
+                                                            <div className="text-lg font-bold text-green-600">
                                                                 {result.wynik}/{maxPoints} pkt
                                                             </div>
                                                         </div>
                                                     ) : (
                                                         <Link href={`/dashboard/uczen/quizy/${quiz.id_quizu}`}>
-                                                            <button className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                                                            <button className="bg-gradient-to-r from-orange-500 to-purple-500 text-white px-6 py-3 rounded-2xl font-bold hover:from-orange-600 hover:to-purple-600 transition transform hover:scale-105">
                                                                 Rozwiąż
                                                             </button>
                                                         </Link>
@@ -343,7 +384,8 @@ export default function StudentDashboard() {
                                     );
                                 })
                             ) : (
-                                <div className="text-center text-gray-500 py-8">
+                                <div className="text-center text-orange-200 py-12 bg-orange-900/30 rounded-2xl">
+                                    <span className="text-4xl block mb-2">📝</span>
                                     Brak quizów
                                 </div>
                             )}
@@ -351,40 +393,52 @@ export default function StudentDashboard() {
                     </div>
 
                     {/* Prace domowe */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-gray-800">📚 Prace domowe</h3>
-                            <Link href="/dashboard/uczen/grades" className="text-sm text-blue-600 hover:underline">
+                    <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                    <span className="text-white text-xl">📚</span>
+                                </div>
+                                <h3 className="text-2xl font-bold text-white">Prace domowe</h3>
+                            </div>
+                            <Link href="/dashboard/uczen/grades" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
                                 Zobacz wszystkie
                             </Link>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {homeworks.length > 0 ? (
                                 homeworks.map((hw) => (
-                                    <div key={hw.id_zadania} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                                    <div key={hw.id_zadania} className="p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-2xl border border-orange-200 hover:border-orange-400 transition">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
-                                                <div className="font-medium text-gray-800">
+                                                <div className="font-bold text-gray-800 text-lg">
                                                     {hw.tytul || 'Bez tytułu'}
                                                 </div>
-                                                <div className="text-xs text-gray-500 mt-1">
+                                                <div className="text-sm text-orange-700 mt-2">
                                                     {hw.tresc ? hw.tresc.substring(0, 50) + '...' : ''}
                                                 </div>
                                             </div>
-                                            <div className="ml-3 text-right">
+                                            <div className="ml-4">
                                                 {hw.ocena !== null && hw.ocena !== undefined ? (
-                                                    <>
-                                                        <div className="text-sm font-bold text-green-600">
-                                                            Ocena: {hw.ocena}
+                                                    <div className="bg-green-100 border-2 border-green-400 px-4 py-3 rounded-2xl text-center">
+                                                        <div className="text-sm font-bold text-green-700 mb-1">
+                                                            Ocena
                                                         </div>
-                                                    </>
+                                                        <div className="text-2xl font-bold text-green-600">
+                                                            {hw.ocena}
+                                                        </div>
+                                                    </div>
                                                 ) : hw.id_odpowiedzi ? (
-                                                    <div className="text-xs text-blue-600">
-                                                        Wysłano
+                                                    <div className="bg-blue-100 border-2 border-blue-400 px-4 py-2 rounded-2xl text-center">
+                                                        <div className="text-sm font-bold text-blue-700">
+                                                            Wysłano
+                                                        </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-xs text-orange-600 font-medium">
-                                                        Do zrobienia
+                                                    <div className="bg-orange-100 border-2 border-orange-400 px-4 py-2 rounded-2xl text-center">
+                                                        <div className="text-sm font-bold text-orange-700">
+                                                            Do zrobienia
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -392,7 +446,8 @@ export default function StudentDashboard() {
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center text-gray-500 py-8">
+                                <div className="text-center text-orange-200 py-12 bg-orange-900/30 rounded-2xl">
+                                    <span className="text-4xl block mb-2">📚</span>
                                     Brak prac domowych
                                 </div>
                             )}
@@ -400,35 +455,41 @@ export default function StudentDashboard() {
                     </div>
 
                     {/* TODO lista */}
-                    <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-semibold text-gray-800">✅ Zadania TODO</h3>
-                            <Link href="/dashboard/uczen/todolist" className="text-sm text-blue-600 hover:underline">
+                    <div className="lg:col-span-12 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                    <span className="text-white text-xl">✅</span>
+                                </div>
+                                <h3 className="text-2xl font-bold text-white">Zadania TODO</h3>
+                            </div>
+                            <Link href="/dashboard/uczen/todolist" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
                                 Zarządzaj listami
                             </Link>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {/* Do zrobienia */}
-                            <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
-                                <h4 className="font-bold text-orange-700 mb-3 flex items-center gap-2">
-                                    <span className="text-lg">📝</span>
+                            <div className="bg-orange-500/20 border-2 border-orange-400 rounded-2xl p-6 backdrop-blur-sm">
+                                <h4 className="font-bold text-orange-200 mb-4 flex items-center gap-3 text-xl">
+                                    <span className="text-2xl">📝</span>
                                     Do zrobienia
                                 </h4>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {todoTasks.filter(task => task.id_statusu === 1).length > 0 ? (
                                         todoTasks.filter(task => task.id_statusu === 1).slice(0, 3).map((task) => (
-                                            <div key={task.id_zadania} className="p-2 bg-white rounded hover:bg-orange-50 transition text-sm">
-                                                <div className="flex items-start gap-2">
-                                                    <div className="flex-shrink-0 mt-0.5">
+                                            <div key={task.id_zadania} className="p-4 bg-white/80 rounded-2xl hover:bg-white/90 transition">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="flex-shrink-0 mt-1 text-lg">
                                                         {task.priorytet === 1 ? '🔴' : task.priorytet === 2 ? '🟡' : '🟢'}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="font-medium text-gray-800 truncate">
+                                                        <div className="font-bold text-gray-800 truncate">
                                                             {task.tytul}
                                                         </div>
                                                         {task.termin && (
-                                                            <div className="text-xs text-gray-500 mt-1">
-                                                                📅 {new Date(task.termin).toLocaleDateString('pl-PL')}
+                                                            <div className="text-sm text-orange-700 mt-2 flex items-center gap-1">
+                                                                <span>📅</span>
+                                                                {new Date(task.termin).toLocaleDateString('pl-PL')}
                                                             </div>
                                                         )}
                                                     </div>
@@ -436,7 +497,8 @@ export default function StudentDashboard() {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center text-gray-500 text-sm py-4">
+                                        <div className="text-center text-orange-200 py-8 bg-orange-900/30 rounded-2xl">
+                                            <span className="text-3xl block mb-2">📝</span>
                                             Brak zadań
                                         </div>
                                     )}
@@ -444,26 +506,27 @@ export default function StudentDashboard() {
                             </div>
 
                             {/* W trakcie */}
-                            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                                <h4 className="font-bold text-blue-700 mb-3 flex items-center gap-2">
-                                    <span className="text-lg">⏳</span>
+                            <div className="bg-purple-500/20 border-2 border-purple-400 rounded-2xl p-6 backdrop-blur-sm">
+                                <h4 className="font-bold text-purple-200 mb-4 flex items-center gap-3 text-xl">
+                                    <span className="text-2xl">⏳</span>
                                     W trakcie
                                 </h4>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {todoTasks.filter(task => task.id_statusu === 2).length > 0 ? (
                                         todoTasks.filter(task => task.id_statusu === 2).slice(0, 3).map((task) => (
-                                            <div key={task.id_zadania} className="p-2 bg-white rounded hover:bg-blue-50 transition text-sm">
-                                                <div className="flex items-start gap-2">
-                                                    <div className="flex-shrink-0 mt-0.5">
+                                            <div key={task.id_zadania} className="p-4 bg-white/80 rounded-2xl hover:bg-white/90 transition">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="flex-shrink-0 mt-1 text-lg">
                                                         {task.priorytet === 1 ? '🔴' : task.priorytet === 2 ? '🟡' : '🟢'}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="font-medium text-gray-800 truncate">
+                                                        <div className="font-bold text-gray-800 truncate">
                                                             {task.tytul}
                                                         </div>
                                                         {task.termin && (
-                                                            <div className="text-xs text-gray-500 mt-1">
-                                                                📅 {new Date(task.termin).toLocaleDateString('pl-PL')}
+                                                            <div className="text-sm text-purple-700 mt-2 flex items-center gap-1">
+                                                                <span>📅</span>
+                                                                {new Date(task.termin).toLocaleDateString('pl-PL')}
                                                             </div>
                                                         )}
                                                     </div>
@@ -471,7 +534,8 @@ export default function StudentDashboard() {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center text-gray-500 text-sm py-4">
+                                        <div className="text-center text-purple-200 py-8 bg-purple-900/30 rounded-2xl">
+                                            <span className="text-3xl block mb-2">⏳</span>
                                             Brak zadań
                                         </div>
                                     )}
@@ -479,26 +543,27 @@ export default function StudentDashboard() {
                             </div>
 
                             {/* Wykonane */}
-                            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                                <h4 className="font-bold text-green-700 mb-3 flex items-center gap-2">
-                                    <span className="text-lg">✅</span>
+                            <div className="bg-green-500/20 border-2 border-green-400 rounded-2xl p-6 backdrop-blur-sm">
+                                <h4 className="font-bold text-green-200 mb-4 flex items-center gap-3 text-xl">
+                                    <span className="text-2xl">✅</span>
                                     Wykonane
                                 </h4>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {todoTasks.filter(task => task.id_statusu === 3).length > 0 ? (
                                         todoTasks.filter(task => task.id_statusu === 3).slice(0, 3).map((task) => (
-                                            <div key={task.id_zadania} className="p-2 bg-white rounded hover:bg-green-50 transition text-sm">
-                                                <div className="flex items-start gap-2">
-                                                    <div className="flex-shrink-0 mt-0.5">
+                                            <div key={task.id_zadania} className="p-4 bg-white/80 rounded-2xl hover:bg-white/90 transition">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="flex-shrink-0 mt-1 text-lg">
                                                         {task.priorytet === 1 ? '🔴' : task.priorytet === 2 ? '🟡' : '🟢'}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="font-medium text-gray-800 truncate line-through">
+                                                        <div className="font-bold text-gray-800 truncate line-through">
                                                             {task.tytul}
                                                         </div>
                                                         {task.termin && (
-                                                            <div className="text-xs text-gray-500 mt-1">
-                                                                📅 {new Date(task.termin).toLocaleDateString('pl-PL')}
+                                                            <div className="text-sm text-green-700 mt-2 flex items-center gap-1">
+                                                                <span>📅</span>
+                                                                {new Date(task.termin).toLocaleDateString('pl-PL')}
                                                             </div>
                                                         )}
                                                     </div>
@@ -506,7 +571,8 @@ export default function StudentDashboard() {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center text-gray-500 text-sm py-4">
+                                        <div className="text-center text-green-200 py-8 bg-green-900/30 rounded-2xl">
+                                            <span className="text-3xl block mb-2">🎉</span>
                                             Brak zadań 🎉
                                         </div>
                                     )}
