@@ -7,6 +7,7 @@ import { getAllGuardians, createGuardian, updateGuardian, deleteGuardian } from 
 import { getAdministrators, createAdministrator, deleteAdministrator } from '/lib/api/administrator.api';
 import { getCourses, getCourseGroups } from '/lib/api/course.api';
 import { createUser, getUserById, updateUser, deleteUser } from '/lib/api/users.api';
+import { adjustStudentCount } from '/lib/api/group.api';
 
 export default function UsersManagement() {
     const { user } = useAuth();
@@ -167,6 +168,9 @@ export default function UsersManagement() {
                         saldo_punktow: 0,
                         pseudonim: userForm.pseudonim || `${userForm.imie}_${userForm.nazwisko}`
                     });
+                    
+                    // Zwiększ liczbę studentów w grupie
+                    await adjustStudentCount(parseInt(userForm.id_grupa), 1);
                 } else if (userForm.rola === 'nauczyciel') {
                     await createTeacher({
                         id_nauczyciela: userId,
@@ -244,6 +248,10 @@ export default function UsersManagement() {
         try {
             console.log('Przypisywanie ucznia do grupy:', { studentId, groupId });
             await enrollStudentToGroup(studentId, parseInt(groupId));
+            
+            // Zwiększ liczbę studentów w nowej grupie
+            await adjustStudentCount(parseInt(groupId), 1);
+            
             alert('Uczeń został przypisany do grupy!');
             await loadUsersData();
         } catch (err) {
@@ -258,7 +266,17 @@ export default function UsersManagement() {
         }
         
         try {
+            // Najpierw znajdź grupę ucznia przed usunięciem
+            const student = students.find(s => s.id_ucznia === studentId);
+            const oldGroupId = student?.id_grupa;
+            
             await enrollStudentToGroup(studentId, null);
+            
+            // Zmniejsz liczbę studentów w starej grupie jeśli była przypisana
+            if (oldGroupId) {
+                await adjustStudentCount(oldGroupId, -1);
+            }
+            
             alert('Uczeń został usunięty z grupy!');
             await loadUsersData();
         } catch (err) {
@@ -301,6 +319,31 @@ export default function UsersManagement() {
         }
         
         try {
+            // Znajdź grupę ucznia przed usunięciem (tylko dla studentów)
+            let oldGroupId = null;
+            if (userType === 'student') {
+                const student = students.find(s => s.id_ucznia === userId);
+                oldGroupId = student?.id_grupa;
+            }
+            
+            // KROK 1: Sprawdź dependencies przed usunięciem
+            if (userType === 'guardian') {
+                // Sprawdź czy opiekun ma przypisanych uczniów
+                const studentsOfGuardian = students.filter(s => s.Opiekun_id_opiekuna === userId);
+                console.log('Uczniowie opiekuna:', studentsOfGuardian);
+                
+                if (studentsOfGuardian.length > 0) {
+                    const studentNames = studentsOfGuardian.map(s => `${s.imie} ${s.nazwisko}`).join(', ');
+                    alert(`❌ Nie można usunąć opiekuna!\n\nOpiekun ma przypisanych uczniów: ${studentNames}\n\nNajpierw usuń lub przepisz uczniów do innego opiekuna, a następnie usuń opiekuna.`);
+                    return; // Przerwij usuwanie
+                }
+            } else if (userType === 'teacher') {
+                // Sprawdź czy nauczyciel ma przypisane grupy - można dodać podobną walidację
+                // const teacherGroups = allGroups.filter(g => g.id_nauczyciela === userId);
+                // if (teacherGroups.length > 0) { ... }
+            }
+            
+            // KROK 2: Usuń z tabeli roli
             if (userType === 'student') {
                 await deleteStudent(userId);
             } else if (userType === 'teacher') {
@@ -308,10 +351,23 @@ export default function UsersManagement() {
             } else if (userType === 'guardian') {
                 await deleteGuardian(userId);
             } else if (userType === 'administrator') {
-                await deleteUser(userId);
+                await deleteAdministrator(userId);
             }
             
-            alert('Użytkownik został usunięty!');
+            // KROK 3: Usuń główny rekord użytkownika z tabeli users
+            try {
+                await deleteUser(userId);
+            } catch (err) {
+                console.warn('Błąd usuwania głównego rekordu użytkownika (możliwe że już nie istnieje):', err);
+                // Nie przerywamy - rekord roli został usunięty
+            }
+            
+            // KROK 4: Zmniejsz liczbę studentów w grupie po usunięciu ucznia
+            if (userType === 'student' && oldGroupId) {
+                await adjustStudentCount(oldGroupId, -1);
+            }
+            
+            alert('✅ Użytkownik został usunięty!');
             await loadUsersData();
         } catch (err) {
             console.error('Błąd usuwania użytkownika:', err);

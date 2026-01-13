@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { enrollStudentToGroup } from '../lib/api/student.api';
+import { adjustStudentCount } from '../lib/api/group.api';
 
 export default function GroupEnrollForm() {
     const { id_kursu, id_grupa } = useParams();
@@ -24,6 +25,10 @@ export default function GroupEnrollForm() {
         setLoading(true);
         try {
             await enrollStudentToGroup({ ...form, id_grupa });
+            
+            // Zwiększ liczbę studentów w grupie
+            await adjustStudentCount(id_grupa, 1);
+            
             alert('Uczeń został zapisany!');
             router.push('/courses');
         } catch (err) {

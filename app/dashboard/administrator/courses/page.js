@@ -313,6 +313,10 @@ export default function CoursesManagementPage() {
         try {
             // Przypisz ucznia do grupy przez aktualizację id_grupa
             await updateStudent(studentId, { id_grupa: selectedGroup.id_grupa });
+            
+            // Zwiększ liczbę studentów w grupie
+            await adjustStudentCount(selectedGroup.id_grupa, 1);
+            
             await handleManageStudents(selectedGroup);
             // Odśwież listę grup żeby zaktualizować licznik
             const updatedGroups = await getAllGroups();
@@ -327,6 +331,10 @@ export default function CoursesManagementPage() {
         try {
             // Usuń ucznia z grupy - ustaw id_grupa na null
             await updateStudent(studentId, { id_grupa: null });
+            
+            // Zmniejsz liczbę studentów w grupie
+            await adjustStudentCount(selectedGroup.id_grupa, -1);
+            
             await handleManageStudents(selectedGroup);
             // Odśwież listę grup żeby zaktualizować licznik
             const updatedGroups = await getAllGroups();

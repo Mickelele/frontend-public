@@ -41,7 +41,6 @@ export default function Sidebar({ isOpen, onClose }) {
             case 'administrator':
 
                 return [
-                    { href: '/dashboard/administrator', label: 'Dashboard', icon: '📊', description: 'Panel administracyjny' },
                     { href: '/dashboard/administrator/users', label: 'Użytkownicy', icon: '👥', description: 'Zarządzanie użytkownikami' },
                     { href: '/dashboard/administrator/courses', label: 'Kursy i grupy', icon: '📚', description: 'Zarządzanie kursami i grupami' },
                     { href: '/dashboard/administrator/substitutions', label: 'Zastępstwa', icon: '🔄', description: 'Zarządzanie zastępstwami' },
