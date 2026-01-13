@@ -8,6 +8,7 @@ import { getAdministrators, createAdministrator, deleteAdministrator } from '/li
 import { getCourses, getCourseGroups } from '/lib/api/course.api';
 import { createUser, getUserById, updateUser, deleteUser } from '/lib/api/users.api';
 import { adjustStudentCount } from '/lib/api/group.api';
+import { updateStudentPoints, getStudentPoints } from '/lib/api/student-points.api';
 
 export default function UsersManagement() {
     const { user } = useAuth();
@@ -26,10 +27,15 @@ export default function UsersManagement() {
     const [showUserModal, setShowUserModal] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
+    const [showPointsModal, setShowPointsModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalType, setModalType] = useState('');
     const [guardianSearchTerm, setGuardianSearchTerm] = useState('');
     const [newRole, setNewRole] = useState('');
+    const [pointsForm, setPointsForm] = useState({
+        points: '',
+        operation: 'add' // 'add' lub 'subtract'
+    });
     
     const [userForm, setUserForm] = useState({
         imie: '',
@@ -393,6 +399,63 @@ export default function UsersManagement() {
         setShowUserModal(true);
     };
 
+    const handleOpenPointsModal = async (student) => {
+        try {
+            setSelectedUser(student);
+            setPointsForm({
+                points: '',
+                operation: 'add'
+            });
+            setShowPointsModal(true);
+        } catch (err) {
+            console.error('Błąd przy otwieraniu modala punktów:', err);
+            alert('Błąd przy otwieraniu modala punktów');
+        }
+    };
+
+    const handleUpdatePoints = async (e) => {
+        e.preventDefault();
+        
+        if (!selectedUser || !pointsForm.points || isNaN(pointsForm.points)) {
+            alert('Wprowadź poprawną liczbę punktów');
+            return;
+        }
+
+        const pointsToUpdate = parseInt(pointsForm.points);
+        if (pointsToUpdate <= 0) {
+            alert('Liczba punktów musi być większa od 0');
+            return;
+        }
+
+        const delta = pointsForm.operation === 'add' ? pointsToUpdate : -pointsToUpdate;
+        
+        if (!confirm(`Czy na pewno chcesz ${pointsForm.operation === 'add' ? 'dodać' : 'odjąć'} ${pointsToUpdate} punktów uczniowi ${selectedUser.imie} ${selectedUser.nazwisko}?`)) {
+            return;
+        }
+
+        try {
+            await updateStudentPoints(selectedUser.id_ucznia, delta);
+            
+            // Aktualizujemy lokalnie dane ucznia
+            setStudents(prev => prev.map(student => 
+                student.id_ucznia === selectedUser.id_ucznia 
+                    ? { 
+                        ...student, 
+                        saldo_punktow: Math.max(0, (student.saldo_punktow || 0) + delta)
+                    }
+                    : student
+            ));
+            
+            setShowPointsModal(false);
+            setPointsForm({ points: '', operation: 'add' });
+            alert('✅ Punkty zostały zaktualizowane!');
+            
+        } catch (err) {
+            console.error('Błąd przy aktualizacji punktów:', err);
+            alert('Błąd przy aktualizacji punktów: ' + (err.message || 'Nieznany błąd'));
+        }
+    };
+
     const handleOpenRoleChange = (userToEdit, currentRole) => {
         setSelectedUser(userToEdit);
         setNewRole(currentRole);
@@ -656,6 +719,7 @@ export default function UsersManagement() {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Imię i nazwisko</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grupa</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Punkty</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Opiekun</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Akcje</th>
                                             </tr>
@@ -704,6 +768,13 @@ export default function UsersManagement() {
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="px-3 py-1 text-sm font-bold rounded-full bg-yellow-100 text-yellow-800">
+                                                                ⭐ {student.saldo_punktow || 0}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                         {student.Opiekun_id_opiekuna ? (
                                                             <div className="flex items-center gap-2">
                                                                 <div>
@@ -746,6 +817,13 @@ export default function UsersManagement() {
                                                             className="text-blue-600 hover:text-blue-800 mr-3"
                                                         >
                                                             ✏️
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleOpenPointsModal(student)}
+                                                            className="text-yellow-600 hover:text-yellow-800 mr-3"
+                                                            title="Zarządzaj punktami"
+                                                        >
+                                                            ⭐
                                                         </button>
                                                         <button 
                                                             onClick={() => handleDeleteUser(student.id_ucznia, 'student')}
@@ -1277,6 +1355,93 @@ export default function UsersManagement() {
                                 Zmień rolę
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showPointsModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                            ⭐ Zarządzaj punktami
+                        </h2>
+                        
+                        {selectedUser && (
+                            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-600 mb-1">Uczeń:</p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                    {selectedUser.imie} {selectedUser.nazwisko}
+                                </p>
+                                <p className="text-sm text-gray-600 mt-2">
+                                    Aktualne punkty: <span className="font-bold text-yellow-600">⭐ {selectedUser.saldo_punktow || 0}</span>
+                                </p>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleUpdatePoints}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Operacja:
+                                    </label>
+                                    <select
+                                        value={pointsForm.operation}
+                                        onChange={(e) => setPointsForm({ ...pointsForm, operation: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+                                    >
+                                        <option value="add">➕ Dodaj punkty</option>
+                                        <option value="subtract">➖ Odejmij punkty</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Liczba punktów:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={pointsForm.points}
+                                        onChange={(e) => setPointsForm({ ...pointsForm, points: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+                                        placeholder="Wprowadź liczbę punktów"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <p className="text-sm text-blue-700">
+                                        <strong>Zasady punktów:</strong>
+                                    </p>
+                                    <ul className="text-xs text-blue-600 mt-1 ml-4 list-disc">
+                                        <li>+1 punkt za obecność na zajęciach</li>
+                                        <li>-1 punkt za zmianę obecności na "nie określone"</li>
+                                        <li>-5 punktów za uwagę</li>
+                                        <li>Punkty nie mogą być ujemne (minimum 0)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowPointsModal(false);
+                                        setSelectedUser(null);
+                                        setPointsForm({ points: '', operation: 'add' });
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                                >
+                                    Anuluj
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                                >
+                                    {pointsForm.operation === 'add' ? '➕' : '➖'} Zaktualizuj
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

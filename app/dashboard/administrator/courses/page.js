@@ -21,7 +21,8 @@ import {
     getLessonsForGroup,
     createLesson, 
     updateLesson, 
-    deleteLesson 
+    deleteLesson,
+    createLessonsForGroup
 } from '../../../../lib/api/lesson.api';
 import { 
     getAllRooms, 
@@ -53,6 +54,7 @@ export default function CoursesManagementPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showStudentManagement, setShowStudentManagement] = useState(false);
     const [showRoomAvailability, setShowRoomAvailability] = useState(false);
+    const [showBulkLessonModal, setShowBulkLessonModal] = useState(false);
     const [availabilityForm, setAvailabilityForm] = useState({
         id_sali: '',
         data: '',
@@ -104,6 +106,12 @@ export default function CoursesManagementPage() {
         lokalizacja: '',
         ilosc_miejsc: '' 
     });
+    const [bulkLessonForm, setBulkLessonForm] = useState({
+        id_grupa: ''
+    });
+    const [bulkLessonLoading, setBulkLessonLoading] = useState(false);
+    const [bulkLessonSuccess, setBulkLessonSuccess] = useState(null);
+    const [groupSearchTerm, setGroupSearchTerm] = useState('');
 
     useEffect(() => {
         loadData();
@@ -374,6 +382,39 @@ export default function CoursesManagementPage() {
         } catch (error) {
             console.error('Błąd zapisywania zajęć:', error);
             alert('Nie udało się zapisać zajęć');
+        }
+    };
+
+    const handleCreateLessonsForGroup = async () => {
+        try {
+            if (!bulkLessonForm.id_grupa) {
+                return;
+            }
+
+            setBulkLessonLoading(true);
+            setBulkLessonSuccess(null);
+
+            const result = await createLessonsForGroup(parseInt(bulkLessonForm.id_grupa));
+            
+            setBulkLessonSuccess(`Pomyślnie utworzono ${result.zajecia?.length || 'wiele'} zajęć dla grupy`);
+            
+            // Reset formularza
+            setBulkLessonForm({ id_grupa: '' });
+            
+            // Odśwież dane
+            loadData();
+            
+            // Zamknij modal po 2 sekundach
+            setTimeout(() => {
+                setShowBulkLessonModal(false);
+                setBulkLessonSuccess(null);
+            }, 2000);
+
+        } catch (error) {
+            console.error('Błąd tworzenia zajęć dla grupy:', error);
+            setBulkLessonSuccess('❌ Nie udało się stworzyć zajęć dla grupy');
+        } finally {
+            setBulkLessonLoading(false);
         }
     };
 
@@ -923,22 +964,35 @@ export default function CoursesManagementPage() {
                                             return matchesCourse && matchesGroup && matchesSearch;
                                         }).length})
                                     </h2>
-                                    <button
-                                        onClick={() => {
-                                            setEditingLesson(null);
-                                            setSelectedLocation('');
-                                            setLessonForm({
-                                                id_grupy: '',
-                                                data: '',
-                                                tematZajec: '',
-                                                Sala_id_sali: ''
-                                            });
-                                            setShowLessonModal(true);
-                                        }}
-                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
-                                    >
-                                        ➕ Dodaj Zajęcia
-                                    </button>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setEditingLesson(null);
+                                                setSelectedLocation('');
+                                                setLessonForm({
+                                                    id_grupy: '',
+                                                    data: '',
+                                                    tematZajec: '',
+                                                    Sala_id_sali: ''
+                                                });
+                                                setShowLessonModal(true);
+                                            }}
+                                            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                        >
+                                            ➕ Dodaj Zajęcia
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setBulkLessonForm({ id_grupa: '' });
+                                                setBulkLessonSuccess(null);
+                                                setGroupSearchTerm('');
+                                                setShowBulkLessonModal(true);
+                                            }}
+                                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                        >
+                                            🎯 Stwórz wiele zajęć
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Filtry i wyszukiwanie */}
@@ -1992,6 +2046,124 @@ export default function CoursesManagementPage() {
                                     Usuń
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal masowego tworzenia zajęć */}
+            {showBulkLessonModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                🎯 Tworzenie zajęć dla grupy
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            {!bulkLessonSuccess ? (
+                                <>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Wyszukaj i wybierz grupę
+                                        </label>
+                                        <div className="mb-2">
+                                            <input
+                                                type="text"
+                                                placeholder="🔍 Wyszukaj po nazwie kursu..."
+                                                value={groupSearchTerm}
+                                                onChange={(e) => setGroupSearchTerm(e.target.value)}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                disabled={bulkLessonLoading}
+                                            />
+                                        </div>
+                                        <select
+                                            value={bulkLessonForm.id_grupa}
+                                            onChange={(e) => setBulkLessonForm({ id_grupa: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            disabled={bulkLessonLoading}
+                                        >
+                                            <option value="">-- Wybierz grupę --</option>
+                                            {groups
+                                                .filter(group => {
+                                                    if (!groupSearchTerm) return true;
+                                                    const course = courses.find(c => c.id_kursu === group.Kurs_id_kursu);
+                                                    const courseName = course?.nazwa_kursu || '';
+                                                    return courseName.toLowerCase().includes(groupSearchTerm.toLowerCase());
+                                                })
+                                                .map(group => {
+                                                    const course = courses.find(c => c.id_kursu === group.Kurs_id_kursu);
+                                                    return (
+                                                        <option key={group.id_grupa} value={group.id_grupa}>
+                                                            {course?.nazwa_kursu || 'Nieznany kurs'} (Grupa {group.id_grupa})
+                                                        </option>
+                                                    );
+                                                })
+                                            }
+                                        </select>
+                                        {groupSearchTerm && groups.filter(group => {
+                                            const course = courses.find(c => c.id_kursu === group.Kurs_id_kursu);
+                                            const courseName = course?.nazwa_kursu || '';
+                                            return courseName.toLowerCase().includes(groupSearchTerm.toLowerCase());
+                                        }).length === 0 && (
+                                            <p className="text-sm text-gray-500 mt-1">Nie znaleziono grup pasujących do wyszukiwania</p>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                                        <p className="text-sm text-blue-800">
+                                            <strong>ℹ️ Jak to działa:</strong><br/>
+                                            System automatycznie utworzy wszystkie zajęcia dla wybranej grupy na podstawie:
+                                        </p>
+                                        <ul className="text-sm text-blue-700 mt-2 ml-4 list-disc">
+                                            <li>Dat rozpoczęcia i zakończenia kursu</li>
+                                            <li>Dnia tygodnia grupy</li>
+                                            <li>Godziny zajęć grupy</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setShowBulkLessonModal(false);
+                                                setBulkLessonForm({ id_grupa: '' });
+                                                setBulkLessonSuccess(null);
+                                                setGroupSearchTerm('');
+                                            }}
+                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all font-medium"
+                                            disabled={bulkLessonLoading}
+                                        >
+                                            Anuluj
+                                        </button>
+                                        <button
+                                            onClick={handleCreateLessonsForGroup}
+                                            disabled={!bulkLessonForm.id_grupa || bulkLessonLoading}
+                                            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {bulkLessonLoading ? (
+                                                <span className="flex items-center justify-center">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    Tworzę...
+                                                </span>
+                                            ) : (
+                                                '✨ Stwórz zajęcia'
+                                            )}
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center">
+                                    <div className="text-4xl mb-3">
+                                        {bulkLessonSuccess.includes('❌') ? '❌' : '✅'}
+                                    </div>
+                                    <p className={`text-lg font-medium ${bulkLessonSuccess.includes('❌') ? 'text-red-600' : 'text-green-600'}`}>
+                                        {bulkLessonSuccess}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Modal zamknie się automatycznie...
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

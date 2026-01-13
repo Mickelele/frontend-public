@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { getCourseById, getCourseGroups } from '../../../lib/api/course.api';
 import { getLessonsForGroup } from '../../../lib/api/lesson.api';
 import { enrollStudentToGroupWithData } from '../../../lib/api/student.api';
-import { adjustStudentCount } from '../../../lib/api/group.api';
 import { useAuth } from '../../../context/AuthContext';
 
 export default function CourseDetailsPage() {
@@ -143,10 +142,8 @@ export default function CourseDetailsPage() {
         try {
             setEnrolling(true);
             // Zapisz nowego ucznia na grupę używając endpoint'u zapiszNaGrupe
+            // Endpoint automatycznie zwiększa liczbę studentów w grupie
             await enrollStudentToGroupWithData({ ...enrollForm, id_grupa: groupId });
-            
-            // Zwiększ liczbę studentów w grupie
-            await adjustStudentCount(groupId, 1);
             
             alert('Uczeń został utworzony i zapisany na grupę!');
             setEnrollModal({ visible: false, group: null });

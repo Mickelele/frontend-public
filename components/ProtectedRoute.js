@@ -15,10 +15,10 @@ export default function ProtectedRoute({ children, requiredRole = null }) {
 
         if (!loading && user && requiredRole && user.role !== requiredRole) {
             const rolePaths = {
-                'admin': '/dashboard/admin',
-                'user': '/dashboard/user',
-                'moderator': '/dashboard/moderator',
-                'company': '/dashboard/company',
+                'administrator': '/dashboard/administrator',
+                'nauczyciel': '/dashboard/nauczyciel/attendance',
+                'opiekun': '/dashboard/opiekun',
+                'uczen': '/dashboard/uczen',
             };
 
             const userDashboard = rolePaths[user.role] || '/dashboard';

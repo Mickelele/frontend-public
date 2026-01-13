@@ -10,6 +10,7 @@ import { getAllQuizzes, updateQuiz } from "../../../../lib/api/quiz.api";
 import { getSubstitutesByTeacherReporting, getSubstitutesByTeacherSubstituting } from "../../../../lib/api/substitute.api";
 import { getGroupById, getGroupStudents } from "../../../../lib/api/group.api";
 import { getUserById } from "../../../../lib/api/users.api";
+import { awardAttendancePoint, revokeAttendancePoint, penalizeForRemark } from "../../../../lib/api/student-points.api";
 
 export default function TeacherCoursesPage() {
     const router = useRouter();
@@ -22,6 +23,8 @@ export default function TeacherCoursesPage() {
     const [mySubstitutesTaken, setMySubstitutesTaken] = useState([]);
     const [substituteLessons, setSubstituteLessons] = useState([]);
     const [substitutesExpanded, setSubstitutesExpanded] = useState(true);
+    const [unsavedPresences, setUnsavedPresences] = useState({}); // {zajecieId_studentId: {value, original}}
+    const [saving, setSaving] = useState(false);
     const [presenceMenu, setPresenceMenu] = useState({
         visible: false,
         x: 0,
@@ -446,9 +449,21 @@ export default function TeacherCoursesPage() {
     const getNazwaZajec = z => z.tematZajec || "Brak tematu";
 
     const getStudentPresence = (zajecie, studentId) => {
+        // Sprawdź czy jest niezapisana zmiana
+        const changeKey = `${zajecie.id_zajec}_${studentId}`;
+        if (unsavedPresences[changeKey]) {
+            return unsavedPresences[changeKey].value;
+        }
+        
+        // W przeciwnym razie użyj oryginalnych danych
         const o = zajecie.obecnosci?.find(x => x.id_ucznia === studentId);
         if (!o) return null;
         return o.czyObecny == 1;
+    };
+
+    const isUnsavedChange = (zajecieId, studentId) => {
+        const changeKey = `${zajecieId}_${studentId}`;
+        return !!unsavedPresences[changeKey];
     };
 
     const getPresenceColor = status => {
@@ -524,8 +539,17 @@ export default function TeacherCoursesPage() {
 
             const result = await addComment(remarkData);
 
+            // Po pomyślnym dodaniu uwagi - penalizuj ucznia punktami (-5 punktów)
+            try {
+                await penalizeForRemark(remarkModal.selectedStudent.id_ucznia);
+                console.log(`Odebrano 5 punktów uczniowi ${remarkModal.selectedStudent.id_ucznia} za uwagę`);
+            } catch (pointsError) {
+                console.error("Błąd przy karze punktowej za uwagę:", pointsError);
+                // Nie przerywamy - uwaga została dodana
+            }
+
             closeRemarkModal();
-            alert("Uwaga została dodana pomyślnie!");
+            alert("Uwaga została dodana pomyślnie! Uczniowi odebrano 5 punktów.");
 
         } catch (error) {
             console.error("Błąd przy dodawaniu uwagi:", error);
@@ -618,7 +642,6 @@ export default function TeacherCoursesPage() {
         if (updating) return;
 
         try {
-            setUpdating(true);
             const { idObecnosci, idZajec, idStudenta } = presenceMenu;
 
             if (!idZajec || !idStudenta) {
@@ -626,6 +649,32 @@ export default function TeacherCoursesPage() {
                 return;
             }
 
+            // Znajdź oryginalną obecność
+            const zajecie = [
+                ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
+                ...substituteLessons
+            ].find(z => z.id_zajec === idZajec);
+            
+            let originalPresence = null;
+            if (zajecie) {
+                const existingPresence = zajecie.obecnosci?.find(o => o.id_ucznia === idStudenta);
+                originalPresence = existingPresence ? (existingPresence.czyObecny === 1) : null;
+            }
+
+            // Zapisz zmianę lokalnie
+            const changeKey = `${idZajec}_${idStudenta}`;
+            setUnsavedPresences(prev => ({
+                ...prev,
+                [changeKey]: {
+                    value: value,
+                    original: originalPresence,
+                    idObecnosci: idObecnosci,
+                    idZajec: idZajec,
+                    idStudenta: idStudenta
+                }
+            }));
+
+            // Aktualizuj widok lokalnie
             updatePresenceOptimistically(idZajec, idStudenta, value);
 
             setPresenceMenu({
@@ -637,33 +686,245 @@ export default function TeacherCoursesPage() {
                 idStudenta: null
             });
 
-            let apiCall;
-            if (!idObecnosci && value !== null) {
-                apiCall = createPresence(idZajec, idStudenta, value);
-            } else if (idObecnosci && value !== null) {
-                apiCall = setPresence(idObecnosci, value);
-            } else if (idObecnosci && value === null) {
-                apiCall = deletePresence(idObecnosci);
+        } catch (err) {
+            console.error("Błąd przy lokalnej zmianie obecności:", err);
+        }
+    };
+
+    const saveAllPresences = async () => {
+        if (Object.keys(unsavedPresences).length === 0) {
+            alert("Brak zmian do zapisania");
+            return;
+        }
+
+        if (!confirm(`Czy zapisać ${Object.keys(unsavedPresences).length} zmian obecności?`)) {
+            return;
+        }
+
+        setSaving(true);
+        const errors = [];
+        let pointsChanges = [];
+
+        try {
+            for (const [changeKey, change] of Object.entries(unsavedPresences)) {
+                const { value, original, idObecnosci, idZajec, idStudenta } = change;
+
+                try {
+                    let apiCall;
+                    if (!idObecnosci && value !== null) {
+                        await createPresence(idZajec, idStudenta, value);
+                    } else if (idObecnosci && value !== null) {
+                        await setPresence(idObecnosci, value);
+                    } else if (idObecnosci && value === null) {
+                        await deletePresence(idObecnosci);
+                    }
+
+                    // Przygotuj zmiany punktów
+                    if (value === true && (original === false || original === null)) {
+                        // Uczeń otrzymuje obecność -> +1 punkt
+                        pointsChanges.push({ studentId: idStudenta, action: 'add' });
+                    } else if (value === false && original === true) {
+                        // Uczeń traci obecność (obecny -> nieobecny) -> -1 punkt
+                        pointsChanges.push({ studentId: idStudenta, action: 'remove' });
+                    } else if (value === null && original === true) {
+                        // Uczeń traci obecność (obecny -> brak danych) -> -1 punkt
+                        pointsChanges.push({ studentId: idStudenta, action: 'remove' });
+                    }
+
+                } catch (error) {
+                    console.error(`Błąd zapisywania obecności ${changeKey}:`, error);
+                    errors.push(changeKey);
+                }
             }
 
-            if (apiCall) {
-                apiCall
-                    .then(async result => {
-                        // Nie odświeżamy - optymistyczna aktualizacja już zadziałała
-                    })
-                    .catch(async error => {
-                        // W przypadku błędu odśwież wszystko
-                        await loadCourses(selectedDay);
-                        await loadSubstitutes();
-                    });
+            // Zapisz punkty po pomyślnym zapisie obecności
+            for (const pointChange of pointsChanges) {
+                try {
+                    if (pointChange.action === 'add') {
+                        await awardAttendancePoint(pointChange.studentId);
+                    } else {
+                        await revokeAttendancePoint(pointChange.studentId);
+                    }
+                } catch (pointsError) {
+                    console.error("Błąd przy zarządzaniu punktami:", pointsError);
+                }
             }
+
+            if (errors.length === 0) {
+                setUnsavedPresences({});
+                alert("✅ Wszystkie obecności zostały zapisane!");
+            } else {
+                alert(`⚠️ Zapisano z błędami. ${errors.length} zmian nie udało się zapisać.`);
+            }
+
+            // Odśwież dane
+            await loadCourses(selectedDay);
+            await loadSubstitutes();
 
         } catch (err) {
             console.error("Błąd przy zapisie obecności:", err);
-            loadCourses(selectedDay);
+            alert("Błąd przy zapisie obecności");
         } finally {
-            setUpdating(false);
+            setSaving(false);
         }
+    };
+
+    const cancelUnsavedChanges = () => {
+        if (Object.keys(unsavedPresences).length === 0) return;
+
+        if (!confirm("Czy anulować wszystkie niezapisane zmiany?")) return;
+
+        setUnsavedPresences({});
+        // Przywróć oryginalny stan
+        loadCourses(selectedDay);
+        loadSubstitutes();
+    };
+
+    const saveGroupPresences = async (groupId) => {
+        const groupChanges = Object.entries(unsavedPresences).filter(([key, change]) => {
+            // Znajdź zajęcia z tej grupy
+            const zajecie = [
+                ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
+                ...substituteLessons
+            ].find(z => z.id_zajec === change.idZajec);
+            
+            return zajecie && courses.some(c => 
+                c.grupy.some(g => g.id_grupa === groupId && 
+                    g.zajecia.some(z => z.id_zajec === change.idZajec)
+                )
+            );
+        });
+
+        if (groupChanges.length === 0) {
+            alert("Brak zmian w tej grupie do zapisania");
+            return;
+        }
+
+        if (!confirm(`Czy zapisać ${groupChanges.length} zmian obecności dla tej grupy?`)) {
+            return;
+        }
+
+        setSaving(true);
+        const errors = [];
+        let pointsChanges = [];
+
+        try {
+            for (const [changeKey, change] of groupChanges) {
+                const { value, original, idObecnosci, idZajec, idStudenta } = change;
+
+                try {
+                    if (!idObecnosci && value !== null) {
+                        await createPresence(idZajec, idStudenta, value);
+                    } else if (idObecnosci && value !== null) {
+                        await setPresence(idObecnosci, value);
+                    } else if (idObecnosci && value === null) {
+                        await deletePresence(idObecnosci);
+                    }
+
+                    // Przygotuj zmiany punktów
+                    if (value === true && (original === false || original === null)) {
+                        // Obecny (gdy wcześniej był nieobecny lub nie było obecności) - dodaj punkt
+                        pointsChanges.push({ studentId: idStudenta, action: 'add' });
+                    } else if (value === false && original === true) {
+                        // Nieobecny (gdy wcześniej był obecny) - odbierz punkt  
+                        pointsChanges.push({ studentId: idStudenta, action: 'remove' });
+                    } else if (value === null && original === true) {
+                        // Nie określone (gdy wcześniej był obecny) - odbierz punkt
+                        pointsChanges.push({ studentId: idStudenta, action: 'remove' });
+                    }
+                    // Brak zmian punktów w pozostałych przypadkach:
+                    // - value === false && (original === false || original === null) - nieobecny pozostaje nieobecny
+                    // - value === null && (original === false || original === null) - nie określone pozostaje bez zmian
+
+                } catch (error) {
+                    console.error(`Błąd zapisywania obecności ${changeKey}:`, error);
+                    errors.push(changeKey);
+                }
+            }
+
+            // Zapisz punkty
+            for (const pointChange of pointsChanges) {
+                try {
+                    if (pointChange.action === 'add') {
+                        await awardAttendancePoint(pointChange.studentId);
+                    } else {
+                        await revokeAttendancePoint(pointChange.studentId);
+                    }
+                } catch (pointsError) {
+                    console.error("Błąd przy zarządzaniu punktami:", pointsError);
+                }
+            }
+
+            if (errors.length === 0) {
+                // Usuń zapisane zmiany z unsavedPresences
+                const newUnsavedPresences = { ...unsavedPresences };
+                groupChanges.forEach(([key]) => {
+                    delete newUnsavedPresences[key];
+                });
+                setUnsavedPresences(newUnsavedPresences);
+                
+                alert("✅ Obecności dla grupy zostały zapisane!");
+            } else {
+                alert(`⚠️ Zapisano z błędami. ${errors.length} zmian nie udało się zapisać.`);
+            }
+
+            // Odśwież dane
+            await loadCourses(selectedDay);
+            await loadSubstitutes();
+
+        } catch (err) {
+            console.error("Błąd przy zapisie obecności:", err);
+            alert("Błąd przy zapisie obecności");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const cancelGroupChanges = (groupId) => {
+        const groupChanges = Object.entries(unsavedPresences).filter(([key, change]) => {
+            // Znajdź zajęcia z tej grupy
+            const zajecie = [
+                ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
+                ...substituteLessons
+            ].find(z => z.id_zajec === change.idZajec);
+            
+            return zajecie && courses.some(c => 
+                c.grupy.some(g => g.id_grupa === groupId && 
+                    g.zajecia.some(z => z.id_zajec === change.idZajec)
+                )
+            );
+        });
+
+        if (groupChanges.length === 0) return;
+
+        if (!confirm(`Czy anulować ${groupChanges.length} niezapisanych zmian dla tej grupy?`)) return;
+
+        // Usuń zmiany z unsavedPresences
+        const newUnsavedPresences = { ...unsavedPresences };
+        groupChanges.forEach(([key]) => {
+            delete newUnsavedPresences[key];
+        });
+        setUnsavedPresences(newUnsavedPresences);
+        
+        // Przywróć oryginalny stan dla tej grupy
+        loadCourses(selectedDay);
+        loadSubstitutes();
+    };
+
+    const getGroupUnsavedCount = (groupId) => {
+        return Object.entries(unsavedPresences).filter(([key, change]) => {
+            // Znajdź zajęcia z tej grupy
+            const zajecie = [
+                ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
+                ...substituteLessons
+            ].find(z => z.id_zajec === change.idZajec);
+            
+            return zajecie && courses.some(c => 
+                c.grupy.some(g => g.id_grupa === groupId && 
+                    g.zajecia.some(z => z.id_zajec === change.idZajec)
+                )
+            );
+        }).length;
     };
 
     if (loading) {
@@ -682,8 +943,10 @@ export default function TeacherCoursesPage() {
             <div className="max-w-full mx-auto">
 
                 <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800">Moje kursy i grupy</h1>
-                    <p className="text-gray-600 mt-2">Przeglądaj swoje kursy, grupy i obecności</p>
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-800">Moje kursy i grupy</h1>
+                        <p className="text-gray-600 mt-2">Przeglądaj swoje kursy, grupy i obecności</p>
+                    </div>
                 </header>
 
                 <div className="mb-8">
@@ -794,8 +1057,13 @@ export default function TeacherCoursesPage() {
                                             getStudentFullName={getStudentFullName}
                                             router={router}
                                             openQuizModal={openQuizModal}
+                                            unsavedPresences={unsavedPresences}
                                             mySubstitutesReporting={mySubstitutesReporting}
                                             mySubstitutesTaken={mySubstitutesTaken}
+                                            saveGroupPresences={saveGroupPresences}
+                                            cancelGroupChanges={cancelGroupChanges}
+                                            getGroupUnsavedCount={getGroupUnsavedCount}
+                                            saving={saving}
                                         />
                                     ))}
                                 </div>
@@ -1223,8 +1491,13 @@ function GroupSection({
                           getStudentFullName,
                           router,
                           openQuizModal,
+                          unsavedPresences,
                           mySubstitutesReporting,
-                          mySubstitutesTaken
+                          mySubstitutesTaken,
+                          saveGroupPresences,
+                          cancelGroupChanges,
+                          getGroupUnsavedCount,
+                          saving
                       }) {
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -1264,23 +1537,64 @@ function GroupSection({
                                 : "Brak zaplanowanych zajęć"}
                         </p>
                     ) : (
-                        <AttendanceMatrix
-                            grupa={grupa}
-                            formatDate={formatDate}
-                            getNazwaZajec={getNazwaZajec}
-                            getStudentPresence={getStudentPresence}
-                            getPresenceColor={getPresenceColor}
-                            getPresenceText={getPresenceText}
-                            getPresenceTextColor={getPresenceTextColor}
-                            openPresenceMenu={openPresenceMenu}
-                            openRemarkModal={openRemarkModal}
-                            openEquipmentRemarkModal={openEquipmentRemarkModal}
-                            getStudentFullName={getStudentFullName}
-                            router={router}
-                            openQuizModal={openQuizModal}
-                            mySubstitutesReporting={mySubstitutesReporting}
-                            mySubstitutesTaken={mySubstitutesTaken}
-                        />
+                        <>
+                            <AttendanceMatrix
+                                grupa={grupa}
+                                formatDate={formatDate}
+                                getNazwaZajec={getNazwaZajec}
+                                getStudentPresence={getStudentPresence}
+                                getPresenceColor={getPresenceColor}
+                                getPresenceText={getPresenceText}
+                                getPresenceTextColor={getPresenceTextColor}
+                                openPresenceMenu={openPresenceMenu}
+                                openRemarkModal={openRemarkModal}
+                                openEquipmentRemarkModal={openEquipmentRemarkModal}
+                                getStudentFullName={getStudentFullName}
+                                router={router}
+                                openQuizModal={openQuizModal}
+                                unsavedPresences={unsavedPresences}
+                                mySubstitutesReporting={mySubstitutesReporting}
+                                mySubstitutesTaken={mySubstitutesTaken}
+                            />
+                            
+                            {getGroupUnsavedCount(grupa.id_grupa) > 0 && (
+                                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                                            <span className="text-sm text-yellow-800 font-medium">
+                                                📝 {getGroupUnsavedCount(grupa.id_grupa)} niezapisanych zmian obecności w tej grupie
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => saveGroupPresences(grupa.id_grupa)}
+                                                disabled={saving}
+                                                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 flex items-center gap-1"
+                                            >
+                                                {saving ? (
+                                                    <>
+                                                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                        Zapisywanie...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        💾 Zapisz grupę
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => cancelGroupChanges(grupa.id_grupa)}
+                                                disabled={saving}
+                                                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                                            >
+                                                ❌ Anuluj
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             )}
@@ -1302,6 +1616,7 @@ function AttendanceMatrix({
                               getStudentFullName,
                               router,
                               openQuizModal,
+                              unsavedPresences,
                               mySubstitutesReporting,
                               mySubstitutesTaken
                           }) {
@@ -1420,12 +1735,23 @@ function AttendanceMatrix({
                                             ) : (
                                             <div
                                                 onClick={(e) => openPresenceMenu(e, obecnosc, zajecie.id_zajec, student.id_ucznia)}
-                                                className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto transition-all hover:scale-110 ${getPresenceColor(status)}`}
-                                                title={`Kliknij aby zmienić obecność dla ${getStudentFullName(student)}`}
+                                                className={`w-8 h-8 rounded border-2 cursor-pointer flex items-center justify-center mx-auto transition-all hover:scale-110 relative ${getPresenceColor(status)} ${
+                                                    unsavedPresences[`${zajecie.id_zajec}_${student.id_ucznia}`]
+                                                        ? 'ring-2 ring-yellow-400 ring-offset-1 shadow-lg' 
+                                                        : ''
+                                                }`}
+                                                title={`Kliknij aby zmienić obecność dla ${getStudentFullName(student)}${
+                                                    unsavedPresences[`${zajecie.id_zajec}_${student.id_ucznia}`] ? ' (NIEZAPISANE)' : ''
+                                                }`}
                                             >
                                                 <span className={`font-bold text-sm ${getPresenceTextColor(status)}`}>
                                                     {getPresenceText(status)}
                                                 </span>
+                                                {unsavedPresences[`${zajecie.id_zajec}_${student.id_ucznia}`] && (
+                                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white">
+                                                        <span className="text-xs">!</span>
+                                                    </span>
+                                                )}
                                             </div>
                                             )}
                                         </td>

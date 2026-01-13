@@ -15,7 +15,7 @@ export default function LoginPage() {
     const getDashboardPath = (userRole) => {
         const rolePaths = {
             'administrator': '/dashboard/administrator',
-            'nauczyciel': '/dashboard/nauczyciel',
+            'nauczyciel': '/dashboard/nauczyciel/attendance',
             'opiekun': '/dashboard/opiekun',
             'uczen': '/dashboard/uczen',
         };

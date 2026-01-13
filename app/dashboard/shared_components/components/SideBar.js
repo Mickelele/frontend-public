@@ -53,7 +53,6 @@ export default function Sidebar({ isOpen, onClose }) {
             case 'nauczyciel':
 
                 return [
-                    { href: '/dashboard/nauczyciel', label: 'Dashboard', icon: '📊', description: 'Panel nauczyciela' },
                     { href: '/dashboard/nauczyciel/attendance', label: 'Obecności', icon: '✅', description: 'Sprawdzanie obecności' },
                     { href: '/dashboard/nauczyciel/worktime', label: 'Czas pracy', icon: '⏰', description: 'Godziny pracy' },
                     { href: '/dashboard/nauczyciel/substitutes', label: 'Zastępstwa', icon: '🔄', description: 'Zarządzanie zastępstwami' },
