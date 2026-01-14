@@ -159,7 +159,7 @@ export default function ProfilePage() {
         try {
             const userId = getUserIdFromToken();
             
-            // Aktualizuj email jeśli się zmienił
+            
             if (formData.email !== user.email) {
                 await updateMyProfile({ email: formData.email });
             }
@@ -199,7 +199,7 @@ export default function ProfilePage() {
 
     if (!user) return <p className="text-center text-gray-500 mt-10">Ładowanie profilu...</p>;
 
-    const canEdit = true; // Każdy może edytować swoje dane
+    const canEdit = true;
 
     return (
         <div className="min-h-screen flex justify-center items-center bg-gradient-to-b from-gray-50 to-gray-200 p-6">
@@ -258,52 +258,52 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="mt-8 border-t pt-6 text-gray-700 space-y-4">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <p className="font-semibold">Imię:</p>
-                        <p>{user.imie}</p>
+                        <p className="break-words">{user.imie}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <p className="font-semibold">Nazwisko:</p>
-                        <p>{user.nazwisko}</p>
+                        <p className="break-words">{user.nazwisko}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                         <p className="font-semibold">Email:</p>
                         {editing ? (
                             <input
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full"
                                 placeholder="email@example.com"
                             />
                         ) : (
-                            <p>{user.email}</p>
+                            <p className="break-all">{user.email}</p>
                         )}
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <p className="font-semibold">Rola:</p>
-                        <p className="capitalize">{user.rola}</p>
+                        <p className="capitalize break-words">{user.rola}</p>
                     </div>
 
                     {user.rola === 'uczen' && roleData && (
                         <div className="border-t pt-4">
-                            <div className="grid grid-cols-2 gap-2 items-center">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                                 <p className="font-semibold">Pseudonim:</p>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={formData.pseudonim}
                                         onChange={(e) => setFormData({ ...formData, pseudonim: e.target.value })}
-                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full"
                                     />
                                 ) : (
-                                    <p>{roleData.pseudonim || 'Brak'}</p>
+                                    <p className="break-words">{roleData.pseudonim || 'Brak'}</p>
                                 )}
                             </div>
-                            <div className="grid grid-cols-2 gap-2 mt-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                                 <p className="font-semibold">Punkty:</p>
                                 <p>{roleData.saldo_punktow || 0}</p>
                             </div>
@@ -312,18 +312,18 @@ export default function ProfilePage() {
 
                     {user.rola === 'nauczyciel' && roleData && (
                         <div className="border-t pt-4">
-                            <div className="grid grid-cols-2 gap-2 items-center">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                                 <p className="font-semibold">Numer konta:</p>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={formData.nr_konta_bankowego}
                                         onChange={(e) => setFormData({ ...formData, nr_konta_bankowego: e.target.value })}
-                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
                                         placeholder="00 0000 0000 0000 0000 0000 0000"
                                     />
                                 ) : (
-                                    <p>{roleData.nr_konta_bankowego || 'Brak'}</p>
+                                    <p className="break-all text-sm">{roleData.nr_konta_bankowego || 'Brak'}</p>
                                 )}
                             </div>
                         </div>
@@ -331,18 +331,18 @@ export default function ProfilePage() {
 
                     {user.rola === 'opiekun' && roleData && (
                         <div className="border-t pt-4">
-                            <div className="grid grid-cols-2 gap-2 items-center">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                                 <p className="font-semibold">Numer konta:</p>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={formData.nr_indy_konta_bankowego}
                                         onChange={(e) => setFormData({ ...formData, nr_indy_konta_bankowego: e.target.value })}
-                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
                                         placeholder="00 0000 0000 0000 0000 0000 0000"
                                     />
                                 ) : (
-                                    <p>{roleData.nr_indy_konta_bankowego || 'Brak'}</p>
+                                    <p className="break-all text-sm">{roleData.nr_indy_konta_bankowego || 'Brak'}</p>
                                 )}
                             </div>
                         </div>
@@ -387,7 +387,7 @@ export default function ProfilePage() {
                         </div>
                     )}
 
-                    {/* Password Change Section */}
+                 
                     <div className="border-t pt-6 mt-6">
                         {!changingPassword ? (
                             <button
@@ -417,7 +417,7 @@ export default function ProfilePage() {
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">
                                         Nowe hasło:
                                     </label>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col min-[500px]:flex-row gap-2">
                                         <input
                                             type="text"
                                             value={passwordData.newPassword}

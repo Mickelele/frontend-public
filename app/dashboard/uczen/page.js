@@ -38,7 +38,7 @@ export default function StudentDashboard() {
         try {
             setLoading(true);
 
-            // Pobierz dane ucznia
+            
             const student = await getStudentById(userId);
             setStudentData(student);
 
@@ -47,11 +47,11 @@ export default function StudentDashboard() {
                 return;
             }
 
-            // Pobierz dane grupy
+            
             const group = await getGroupById(student.id_grupa);
             setGroupData(group);
 
-            // Równolegle pobierz wszystkie dane
+            
             const [
                 lessons,
                 allPrizes,
@@ -70,7 +70,7 @@ export default function StudentDashboard() {
                 getStudentTasks(userId).catch(err => { console.error('Błąd TODO:', err); return []; })
             ]);
 
-            // Filtruj nadchodzące zajęcia (przyszłe i dziś) i dodaj dane grupy
+            
             const now = new Date();
             const upcomingFiltered = (lessons || [])
                 .filter(lesson => {
@@ -80,7 +80,7 @@ export default function StudentDashboard() {
                 .sort((a, b) => new Date(a.data) - new Date(b.data))
                 .slice(0, 5);
             
-            // Pobierz dane sal dla zajęć
+           
             const upcomingWithDetails = await Promise.all(
                 upcomingFiltered.map(async (lesson) => {
                     let roomData = null;
@@ -100,20 +100,20 @@ export default function StudentDashboard() {
             );
             setUpcomingLessons(upcomingWithDetails);
 
-            // Wszystkie nagrody (na dashboardzie pokazujemy wszystkie)
+            
             setAvailablePrizes(allPrizes || []);
             setMyPrizes(myPrizesData || []);
 
-            // Punkty ucznia z tabelki uczniowie
+           
             const studentPoints = student?.saldo_punktow || 0;
             console.log('Punkty ucznia z tabelki uczniowie:', studentPoints, 'Cały obiekt studenta:', student);
             setStudentPoints(studentPoints);
 
-            // Quizy - pokaż wszystkie quizy grupy
+           
             setQuizzes(groupQuizzes || []);
             setQuizResults(myQuizResults || []);
             
-            // Pobierz pytania dla quizów i policz maksymalne punkty
+        
             const maxPointsMap = {};
             await Promise.all(
                 (groupQuizzes || []).map(async (quiz) => {
@@ -129,13 +129,13 @@ export default function StudentDashboard() {
             );
             setQuizMaxPoints(maxPointsMap);
 
-            // Prace domowe - filtruj te dla tego ucznia
+            
             const studentHomeworks = (groupHomeworks || [])
                 .filter(hw => hw.id_ucznia === userId || !hw.id_ucznia)
                 .slice(0, 5);
             setHomeworks(studentHomeworks);
 
-            // TODO - pokaż wszystkie zadania (do zrobienia, w trakcie, wykonane)
+            
             console.log('Wszystkie zadania TODO:', myTasks);
             const allTodoTasks = (myTasks || []).filter(task => 
                 task.id_statusu === 1 || task.id_statusu === 2 || task.id_statusu === 3
@@ -150,7 +150,7 @@ export default function StudentDashboard() {
         }
     };
 
-    // Sprawdź czy quiz został rozwiązany
+    
     const getQuizResult = (quizId) => {
         return quizResults.find(result => result.Quiz_id_quizu === quizId || result.id_quizu === quizId);
     };
@@ -188,35 +188,30 @@ export default function StudentDashboard() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-black via-purple-900 to-orange-900">
             <div className="p-8">
-                {/* Header */}
-                <header className="mb-8 text-center">
-                    <div className="inline-block bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl p-8 shadow-2xl">
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-purple-500 bg-clip-text text-transparent mb-3">
+               
+                <header className="mb-6 md:mb-8 text-center">
+                    <div className="inline-block bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-2xl mx-2">
+                        <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-orange-400 to-purple-500 bg-clip-text text-transparent mb-2 md:mb-3">
                             Witaj, {user?.imie}! 👋
                         </h1>
-                        <p className="text-orange-200 text-lg mb-4">
+                        <p className="text-orange-200 text-base md:text-lg mb-3 md:mb-4">
                             Twój pulpit ucznia
                         </p>
-                        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-purple-600 text-white px-6 py-3 rounded-2xl font-bold text-lg">
+                        <div className="inline-flex items-center gap-2 md:gap-3 bg-gradient-to-r from-orange-500 to-purple-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl font-bold text-sm md:text-lg">
                             <span>📎 Punkty:</span>
-                            <span className="text-2xl">{studentPoints}</span>
+                            <span className="text-lg md:text-2xl">{studentPoints}</span>
                         </div>
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Nadchodzące zajęcia */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+                   
                     <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
-                                    <span className="text-white text-xl">📅</span>
-                                </div>
-                                <h3 className="text-2xl font-bold text-white">Nadchodzące zajęcia</h3>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">📅</span>
                             </div>
-                            <Link href="/dashboard/uczen/historiazajec" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
-                                Zobacz wszystkie
-                            </Link>
+                            <h3 className="text-2xl font-bold text-white">Nadchodzące zajęcia</h3>
                         </div>
                         <div className="space-y-4">
                             {upcomingLessons.length > 0 ? (
@@ -227,35 +222,41 @@ export default function StudentDashboard() {
                                                 <div className="font-bold text-gray-800 text-lg">
                                                     {lesson.tematZajec || lesson.temat || 'Temat nieznany'}
                                                 </div>
-                                                <div className="text-sm text-orange-700 mt-2 flex items-center gap-4">
-                                                    {lesson.sala && (
+                                                <div className="text-sm text-orange-700 mt-2 flex flex-col gap-2">
+                                                    <div className="flex items-center gap-4">
+                                                        {lesson.sala && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span>📍</span>
+                                                                {lesson.sala.lokalizacja || ''}
+                                                                {lesson.sala.lokalizacja && lesson.sala.numer && ' - '}
+                                                                {lesson.sala.numer && `Sala ${lesson.sala.numer}`}
+                                                            </span>
+                                                        )}
+                                                        {!lesson.sala && lesson.Sala_id_sali && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span>🚪</span>
+                                                                Sala {lesson.Sala_id_sali}
+                                                            </span>
+                                                        )}
+                                                        {lesson.grupa?.godzina && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span>🕐</span>
+                                                                {lesson.grupa.godzina.substring(0, 5)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
                                                         <span className="flex items-center gap-1">
-                                                            <span>📍</span>
-                                                            {lesson.sala.lokalizacja || ''}
-                                                            {lesson.sala.lokalizacja && lesson.sala.numer && ' - '}
-                                                            {lesson.sala.numer && `Sala ${lesson.sala.numer}`}
+                                                            <span>📅</span>
+                                                            {new Date(lesson.data).toLocaleDateString('pl-PL')}
                                                         </span>
-                                                    )}
-                                                    {!lesson.sala && lesson.Sala_id_sali && (
-                                                        <span className="flex items-center gap-1">
-                                                            <span>🚪</span>
-                                                            Sala {lesson.Sala_id_sali}
-                                                        </span>
-                                                    )}
-                                                    {lesson.grupa?.godzina && (
-                                                        <span className="flex items-center gap-1">
-                                                            <span>🕐</span>
-                                                            {lesson.grupa.godzina.substring(0, 5)}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="text-right ml-4 bg-white/70 rounded-xl p-3">
-                                                <div className="text-lg font-bold text-purple-700">
-                                                    {new Date(lesson.data).toLocaleDateString('pl-PL')}
-                                                </div>
-                                                <div className="text-sm text-orange-600 font-semibold">
-                                                    {lesson.grupa?.dzien_tygodnia || ''}
+                                                        {lesson.grupa?.dzien_tygodnia && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span>📆</span>
+                                                                {lesson.grupa.dzien_tygodnia}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -270,20 +271,15 @@ export default function StudentDashboard() {
                         </div>
                     </div>
 
-                    {/* Dostępne nagrody */}
+                    
                     <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
-                                    <span className="text-white text-xl">🎁</span>
-                                </div>
-                                <h3 className="text-2xl font-bold text-white">Dostępne nagrody</h3>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">🎁</span>
                             </div>
-                            <Link href="/dashboard/uczen/prizes" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
-                                Zobacz wszystkie
-                            </Link>
+                            <h3 className="text-2xl font-bold text-white">Dostępne nagrody</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 md:gap-4">
                             {availablePrizes.length > 0 ? (
                                 availablePrizes.slice(0, 6).map((prize) => {
                                     const isOwned = myPrizes.some(mp => mp.id_nagrody === prize.id_nagrody);
@@ -333,20 +329,20 @@ export default function StudentDashboard() {
                                 </div>
                             )}
                         </div>
+                        <div className="mt-6 text-center">
+                            <Link href="/dashboard/uczen/prizes" className="inline-block bg-gradient-to-r from-orange-500 to-purple-500 text-white px-6 py-3 rounded-xl hover:shadow-lg transition font-semibold">
+                                Zobacz wszystkie nagrody
+                            </Link>
+                        </div>
                     </div>
 
-                    {/* Quizy */}
+                   
                     <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
-                                    <span className="text-white text-xl">📝</span>
-                                </div>
-                                <h3 className="text-2xl font-bold text-white">Quizy</h3>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">📝</span>
                             </div>
-                            <Link href="/dashboard/uczen/quizy" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
-                                Zobacz wszystkie
-                            </Link>
+                            <h3 className="text-2xl font-bold text-white">Quizy</h3>
                         </div>
                         <div className="space-y-4">
                             {quizzes.length > 0 ? (
@@ -355,30 +351,26 @@ export default function StudentDashboard() {
                                     const maxPoints = quizMaxPoints[quiz.id_quizu] || '?';
                                     return (
                                         <div key={quiz.id_quizu} className="p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-2xl border border-orange-200 hover:border-orange-400 transition">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex-1">
-                                                    <div className="font-bold text-gray-800 text-lg">
-                                                        {quiz.nazwa || quiz.tytul}
-                                                    </div>
-                                                </div>
-                                                <div className="ml-4">
-                                                    {result ? (
-                                                        <div className="bg-green-100 border-2 border-green-400 px-4 py-3 rounded-2xl text-center">
-                                                            <div className="text-sm font-bold text-green-700 mb-1">
-                                                                ✓ Ukończono
-                                                            </div>
-                                                            <div className="text-lg font-bold text-green-600">
-                                                                {result.wynik}/{maxPoints} pkt
-                                                            </div>
+                                            <div className="font-bold text-gray-800 text-lg mb-3">
+                                                {quiz.nazwa || quiz.tytul}
+                                            </div>
+                                            <div className="flex justify-center">
+                                                {result ? (
+                                                    <div className="bg-green-100 border-2 border-green-400 px-4 py-3 rounded-2xl text-center">
+                                                        <div className="text-sm font-bold text-green-700 mb-1">
+                                                            ✓ Ukończono
                                                         </div>
-                                                    ) : (
-                                                        <Link href={`/dashboard/uczen/quizy/${quiz.id_quizu}`}>
-                                                            <button className="bg-gradient-to-r from-orange-500 to-purple-500 text-white px-6 py-3 rounded-2xl font-bold hover:from-orange-600 hover:to-purple-600 transition transform hover:scale-105">
-                                                                Rozwiąż
-                                                            </button>
-                                                        </Link>
-                                                    )}
-                                                </div>
+                                                        <div className="text-lg font-bold text-green-600">
+                                                            {result.wynik}/{maxPoints} pkt
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <Link href={`/dashboard/uczen/quizy/${quiz.id_quizu}`}>
+                                                        <button className="bg-gradient-to-r from-orange-500 to-purple-500 text-white px-6 py-3 rounded-2xl font-bold hover:from-orange-600 hover:to-purple-600 transition transform hover:scale-105">
+                                                            Rozwiąż
+                                                        </button>
+                                                    </Link>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -390,58 +382,54 @@ export default function StudentDashboard() {
                                 </div>
                             )}
                         </div>
+                        <div className="mt-6 text-center">
+                            <Link href="/dashboard/uczen/quizy" className="inline-block bg-gradient-to-r from-orange-500 to-purple-500 text-white px-6 py-3 rounded-xl hover:shadow-lg transition font-semibold">
+                                Zobacz wszystkie quizy
+                            </Link>
+                        </div>
                     </div>
 
-                    {/* Prace domowe */}
+                  
                     <div className="lg:col-span-6 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
-                                    <span className="text-white text-xl">📚</span>
-                                </div>
-                                <h3 className="text-2xl font-bold text-white">Prace domowe</h3>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">�</span>
                             </div>
-                            <Link href="/dashboard/uczen/grades" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
-                                Zobacz wszystkie
-                            </Link>
+                            <h3 className="text-2xl font-bold text-white">Prace domowe</h3>
                         </div>
                         <div className="space-y-4">
                             {homeworks.length > 0 ? (
                                 homeworks.map((hw) => (
                                     <div key={hw.id_zadania} className="p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-2xl border border-orange-200 hover:border-orange-400 transition">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <div className="font-bold text-gray-800 text-lg">
-                                                    {hw.tytul || 'Bez tytułu'}
+                                        <div className="font-bold text-gray-800 text-lg mb-2">
+                                            {hw.tytul || 'Bez tytułu'}
+                                        </div>
+                                        <div className="text-sm text-orange-700 mb-3">
+                                            {hw.tresc ? hw.tresc.substring(0, 50) + '...' : ''}
+                                        </div>
+                                        <div className="flex justify-center">
+                                            {hw.ocena !== null && hw.ocena !== undefined ? (
+                                                <div className="bg-green-100 border-2 border-green-400 px-4 py-3 rounded-2xl text-center">
+                                                    <div className="text-sm font-bold text-green-700 mb-1">
+                                                        Ocena
+                                                    </div>
+                                                    <div className="text-2xl font-bold text-green-600">
+                                                        {hw.ocena}
+                                                    </div>
                                                 </div>
-                                                <div className="text-sm text-orange-700 mt-2">
-                                                    {hw.tresc ? hw.tresc.substring(0, 50) + '...' : ''}
+                                            ) : hw.id_odpowiedzi ? (
+                                                <div className="bg-blue-100 border-2 border-blue-400 px-4 py-2 rounded-2xl text-center">
+                                                    <div className="text-sm font-bold text-blue-700">
+                                                        Wysłano
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="ml-4">
-                                                {hw.ocena !== null && hw.ocena !== undefined ? (
-                                                    <div className="bg-green-100 border-2 border-green-400 px-4 py-3 rounded-2xl text-center">
-                                                        <div className="text-sm font-bold text-green-700 mb-1">
-                                                            Ocena
-                                                        </div>
-                                                        <div className="text-2xl font-bold text-green-600">
-                                                            {hw.ocena}
-                                                        </div>
+                                            ) : (
+                                                <div className="bg-orange-100 border-2 border-orange-400 px-4 py-2 rounded-2xl text-center">
+                                                    <div className="text-sm font-bold text-orange-700">
+                                                        Do zrobienia
                                                     </div>
-                                                ) : hw.id_odpowiedzi ? (
-                                                    <div className="bg-blue-100 border-2 border-blue-400 px-4 py-2 rounded-2xl text-center">
-                                                        <div className="text-sm font-bold text-blue-700">
-                                                            Wysłano
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-orange-100 border-2 border-orange-400 px-4 py-2 rounded-2xl text-center">
-                                                        <div className="text-sm font-bold text-orange-700">
-                                                            Do zrobienia
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))
@@ -452,23 +440,23 @@ export default function StudentDashboard() {
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    {/* TODO lista */}
-                    <div className="lg:col-span-12 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
-                                    <span className="text-white text-xl">✅</span>
-                                </div>
-                                <h3 className="text-2xl font-bold text-white">Zadania TODO</h3>
-                            </div>
-                            <Link href="/dashboard/uczen/todolist" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
-                                Zarządzaj listami
+                        <div className="mt-6 text-center">
+                            <Link href="/dashboard/uczen/grades" className="inline-block bg-gradient-to-r from-orange-500 to-purple-500 text-white px-6 py-3 rounded-xl hover:shadow-lg transition font-semibold">
+                                Zobacz wszystkie prace domowe
                             </Link>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Do zrobienia */}
+                    </div>
+
+                   
+                    <div className="lg:col-span-12 bg-white/10 backdrop-blur-lg border border-orange-500/30 rounded-3xl shadow-2xl p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
+                                <span className="text-white text-xl">✅</span>
+                            </div>
+                            <h3 className="text-2xl font-bold text-white">Zadania TODO</h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                           
                             <div className="bg-orange-500/20 border-2 border-orange-400 rounded-2xl p-6 backdrop-blur-sm">
                                 <h4 className="font-bold text-orange-200 mb-4 flex items-center gap-3 text-xl">
                                     <span className="text-2xl">📝</span>
@@ -505,7 +493,7 @@ export default function StudentDashboard() {
                                 </div>
                             </div>
 
-                            {/* W trakcie */}
+                          
                             <div className="bg-purple-500/20 border-2 border-purple-400 rounded-2xl p-6 backdrop-blur-sm">
                                 <h4 className="font-bold text-purple-200 mb-4 flex items-center gap-3 text-xl">
                                     <span className="text-2xl">⏳</span>
@@ -542,7 +530,7 @@ export default function StudentDashboard() {
                                 </div>
                             </div>
 
-                            {/* Wykonane */}
+                          
                             <div className="bg-green-500/20 border-2 border-green-400 rounded-2xl p-6 backdrop-blur-sm">
                                 <h4 className="font-bold text-green-200 mb-4 flex items-center gap-3 text-xl">
                                     <span className="text-2xl">✅</span>
@@ -578,6 +566,11 @@ export default function StudentDashboard() {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                        <div className="mt-6 text-center">
+                            <Link href="/dashboard/uczen/todolist" className="inline-block bg-gradient-to-r from-orange-500 to-purple-500 text-white px-6 py-3 rounded-xl hover:shadow-lg transition font-semibold">
+                                Zarządzaj listami TODO
+                            </Link>
                         </div>
                     </div>
                 </div>

@@ -265,7 +265,7 @@ export default function TeacherHomeworkPage() {
             const result = await gradeHomeworkAnswer(gradeData);
             console.log('Odpowiedź z API:', result);
 
-            // Odświeżamy odpowiedzi dla tego zadania
+            
             if (gradeModal.homeworkId) {
                 await refreshHomeworkAnswers(gradeModal.homeworkId);
             }
@@ -628,41 +628,43 @@ function GroupSection({
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
             <div
-                className="bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 flex justify-between items-center transition-colors"
+                className="bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={toggleGroup}
             >
-                <div className="flex items-center gap-3">
-                    <svg
-                        className={`w-4 h-4 transition-transform text-gray-500 ${expanded ? "rotate-90" : ""}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
-                    </svg>
-                    <div>
-                        <h3 className="font-semibold text-gray-800">Grupa: {grupa.nazwa_grupy}</h3>
-                        <p className="text-sm text-gray-600">
-                            Dzień: <b>{grupa.dzien_tygodnia}</b> |
-                            Godzina: <b>{formatTime(grupa.godzina)}</b> |
-                            Uczniowie: <b>{grupa.uczniowie?.length || 0}</b>
-                        </p>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-3 mb-3">
+                        <svg
+                            className={`w-4 h-4 transition-transform text-gray-500 ${expanded ? "rotate-90" : ""}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                        </svg>
+                        <div>
+                            <h3 className="font-semibold text-gray-800">Grupa: {grupa.nazwa_grupy}</h3>
+                            <p className="text-sm text-gray-600">
+                                Dzień: <b>{grupa.dzien_tygodnia}</b> |
+                                Godzina: <b>{formatTime(grupa.godzina)}</b> |
+                                Uczniowie: <b>{grupa.uczniowie?.length || 0}</b>
+                            </p>
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onAddHomework();
-                        }}
-                        className="px-3 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1"
-                    >
-                        <span>+</span>
-                        <span>Dodaj zadanie</span>
-                    </button>
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-                        {homeworks.length} {homeworks.length === 1 ? 'zadanie' : 'zadań'}
-                    </span>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAddHomework();
+                            }}
+                            className="px-3 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1 w-full sm:w-auto"
+                        >
+                            <span>+</span>
+                            <span>Dodaj zadanie</span>
+                        </button>
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium w-fit">
+                            {homeworks.length} {homeworks.length === 1 ? 'zadanie' : 'zadań'}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -751,7 +753,7 @@ function GroupSection({
 
                                                                 return (
                                                                     <div key={uczen.id_ucznia} className="border border-gray-200 rounded-lg p-3">
-                                                                        <div className="flex justify-between items-center mb-2">
+                                                                        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3">
                                                                             <div className="flex items-center gap-2">
                                                                                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                                                                     <span className="text-blue-600 text-sm font-medium">
@@ -762,28 +764,30 @@ function GroupSection({
                                                                                     <div className="font-medium text-gray-900">
                                                                                         {uczen.imie} {uczen.nazwisko}
                                                                                     </div>
-                                                                                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor()}`}>
-                                                                                        {getStatusText()}
-                                                                                    </span>
                                                                                 </div>
                                                                             </div>
-
-                                                                            {studentAnswer && (
-                                                                                <button
-                                                                                    onClick={() => onOpenGradeModal(
-                                                                                        studentAnswer.id_odpowiedzi,
-                                                                                        homework.id_zadania,
-                                                                                        `${uczen.imie} ${uczen.nazwisko}`,
-                                                                                        studentAnswer.tresc,
-                                                                                        studentAnswer.ocena
-                                                                                    )}
-                                                                                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
-                                                                                >
-                                                                                    {studentAnswer.ocena !== null && studentAnswer.ocena !== undefined
-                                                                                        ? "Zmień ocenę"
-                                                                                        : "Oceń"}
-                                                                                </button>
-                                                                            )}
+                                                                            
+                                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                                                                <span className={`text-xs px-2 py-1 rounded-full w-fit ${getStatusColor()}`}>
+                                                                                    {getStatusText()}
+                                                                                </span>
+                                                                                {studentAnswer && (
+                                                                                    <button
+                                                                                        onClick={() => onOpenGradeModal(
+                                                                                            studentAnswer.id_odpowiedzi,
+                                                                                            homework.id_zadania,
+                                                                                            `${uczen.imie} ${uczen.nazwisko}`,
+                                                                                            studentAnswer.tresc,
+                                                                                            studentAnswer.ocena
+                                                                                        )}
+                                                                                        className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors w-full sm:w-auto"
+                                                                                    >
+                                                                                        {studentAnswer.ocena !== null && studentAnswer.ocena !== undefined
+                                                                                            ? "Zmień ocenę"
+                                                                                            : "Oceń"}
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
 
                                                                         {studentAnswer && (

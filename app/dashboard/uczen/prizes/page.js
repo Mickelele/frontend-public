@@ -103,18 +103,22 @@ export default function PrizesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-6">
             <div className="max-w-7xl mx-auto">
          
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-lg p-6 mb-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold mb-2">⭐ Sklep z nagrodami</h1>
-                            <p className="text-blue-100">Wymień swoje punkty na fantastyczne nagrody!</p>
-                        </div>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 text-center min-w-[150px]">
-                            <p className="text-sm text-blue-100 mb-1">Twoje punkty</p>
-                            <p className="text-4xl font-bold">{studentPoints}</p>
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-lg p-4 md:p-6 mb-4 md:mb-6">
+                    <div className="text-center">
+                        <h1 className="text-2xl md:text-3xl font-bold mb-2">⭐ Sklep z nagrodami</h1>
+                        <p className="text-blue-100 text-sm md:text-base">Wymień swoje punkty na fantastyczne nagrody!</p>
+                    </div>
+                </div>
+
+               
+                <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
+                        <div className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg p-3 md:p-4 text-center min-w-[160px]">
+                            <p className="text-xs md:text-sm text-blue-700 mb-1">Twoje punkty</p>
+                            <p className="text-2xl md:text-4xl font-bold text-blue-600">{studentPoints}</p>
                         </div>
                     </div>
                 </div>
@@ -126,10 +130,10 @@ export default function PrizesPage() {
                 )}
 
          
-                <div className="flex gap-2 mb-6">
+                <div className="flex flex-col sm:flex-row gap-2 mb-4 md:mb-6">
                     <button
                         onClick={() => setActiveTab('available')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition ${
+                        className={`px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold transition text-sm md:text-base ${
                             activeTab === 'available'
                                 ? 'bg-blue-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -139,7 +143,7 @@ export default function PrizesPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('my')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition ${
+                        className={`px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold transition text-sm md:text-base ${
                             activeTab === 'my'
                                 ? 'bg-blue-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -160,7 +164,7 @@ export default function PrizesPage() {
                                 <p className="text-gray-500 text-sm mt-2">Wróć później, aby sprawdzić nowe nagrody!</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                                 {availablePrizes.map((prize) => {
                                     const prizeCost = Number(prize.koszt_punktow || prize.koszt || prize.price || prize.points || 0);
                                     const currentPoints = Number(studentPoints) || 0;
@@ -256,7 +260,7 @@ export default function PrizesPage() {
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                                 {myPrizes.map((myPrize) => (
                                     <div
                                         key={myPrize.id_nagrody_ucznia}

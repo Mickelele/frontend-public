@@ -12,7 +12,7 @@ export default function PresenceCard({ student, presence }) {
 
     return (
         <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-            {/* Header with gradient */}
+           
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -47,7 +47,7 @@ export default function PresenceCard({ student, presence }) {
                 </div>
             </div>
 
-            {/* Content */}
+        
             <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-semibold text-gray-800">Historia obecności</h4>

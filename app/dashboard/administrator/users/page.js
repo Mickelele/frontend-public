@@ -34,7 +34,7 @@ export default function UsersManagement() {
     const [newRole, setNewRole] = useState('');
     const [pointsForm, setPointsForm] = useState({
         points: '',
-        operation: 'add' // 'add' lub 'subtract'
+        operation: 'add' 
     });
     
     const [userForm, setUserForm] = useState({
@@ -175,7 +175,7 @@ export default function UsersManagement() {
                         pseudonim: userForm.pseudonim || `${userForm.imie}_${userForm.nazwisko}`
                     });
                     
-                    // Zwiększ liczbę studentów w grupie
+                   
                     await adjustStudentCount(parseInt(userForm.id_grupa), 1);
                 } else if (userForm.rola === 'nauczyciel') {
                     await createTeacher({
@@ -255,7 +255,7 @@ export default function UsersManagement() {
             console.log('Przypisywanie ucznia do grupy:', { studentId, groupId });
             await enrollStudentToGroup(studentId, parseInt(groupId));
             
-            // Zwiększ liczbę studentów w nowej grupie
+           
             await adjustStudentCount(parseInt(groupId), 1);
             
             alert('Uczeń został przypisany do grupy!');
@@ -272,13 +272,13 @@ export default function UsersManagement() {
         }
         
         try {
-            // Najpierw znajdź grupę ucznia przed usunięciem
+            
             const student = students.find(s => s.id_ucznia === studentId);
             const oldGroupId = student?.id_grupa;
             
             await enrollStudentToGroup(studentId, null);
             
-            // Zmniejsz liczbę studentów w starej grupie jeśli była przypisana
+            
             if (oldGroupId) {
                 await adjustStudentCount(oldGroupId, -1);
             }
@@ -325,31 +325,29 @@ export default function UsersManagement() {
         }
         
         try {
-            // Znajdź grupę ucznia przed usunięciem (tylko dla studentów)
+           
             let oldGroupId = null;
             if (userType === 'student') {
                 const student = students.find(s => s.id_ucznia === userId);
                 oldGroupId = student?.id_grupa;
             }
             
-            // KROK 1: Sprawdź dependencies przed usunięciem
+        
             if (userType === 'guardian') {
-                // Sprawdź czy opiekun ma przypisanych uczniów
+               
                 const studentsOfGuardian = students.filter(s => s.Opiekun_id_opiekuna === userId);
                 console.log('Uczniowie opiekuna:', studentsOfGuardian);
                 
                 if (studentsOfGuardian.length > 0) {
                     const studentNames = studentsOfGuardian.map(s => `${s.imie} ${s.nazwisko}`).join(', ');
                     alert(`❌ Nie można usunąć opiekuna!\n\nOpiekun ma przypisanych uczniów: ${studentNames}\n\nNajpierw usuń lub przepisz uczniów do innego opiekuna, a następnie usuń opiekuna.`);
-                    return; // Przerwij usuwanie
+                    return; 
                 }
             } else if (userType === 'teacher') {
-                // Sprawdź czy nauczyciel ma przypisane grupy - można dodać podobną walidację
-                // const teacherGroups = allGroups.filter(g => g.id_nauczyciela === userId);
-                // if (teacherGroups.length > 0) { ... }
+                
             }
             
-            // KROK 2: Usuń z tabeli roli
+     
             if (userType === 'student') {
                 await deleteStudent(userId);
             } else if (userType === 'teacher') {
@@ -360,15 +358,15 @@ export default function UsersManagement() {
                 await deleteAdministrator(userId);
             }
             
-            // KROK 3: Usuń główny rekord użytkownika z tabeli users
+          
             try {
                 await deleteUser(userId);
             } catch (err) {
                 console.warn('Błąd usuwania głównego rekordu użytkownika (możliwe że już nie istnieje):', err);
-                // Nie przerywamy - rekord roli został usunięty
+               
             }
             
-            // KROK 4: Zmniejsz liczbę studentów w grupie po usunięciu ucznia
+        
             if (userType === 'student' && oldGroupId) {
                 await adjustStudentCount(oldGroupId, -1);
             }
@@ -436,7 +434,7 @@ export default function UsersManagement() {
         try {
             await updateStudentPoints(selectedUser.id_ucznia, delta);
             
-            // Aktualizujemy lokalnie dane ucznia
+            
             setStudents(prev => prev.map(student => 
                 student.id_ucznia === selectedUser.id_ucznia 
                     ? { 
@@ -481,7 +479,7 @@ export default function UsersManagement() {
         }
 
         try {
-            // Step 1: Delete from old role table (skip for administrator - no separate table)
+            
             if (oldRole === 'uczen') {
                 await deleteStudent(userId);
             } else if (oldRole === 'nauczyciel') {
@@ -492,10 +490,10 @@ export default function UsersManagement() {
                 await deleteAdministrator(userId);
             }
 
-            // Step 2: Update user role in user table
+          
             await updateUser(userId, { rola: newRole });
 
-            // Step 3: Create in new role table (skip for administrator - no separate table)
+          
             if (newRole === 'uczen') {
                 await createStudent({
                     id_ucznia: userId,
@@ -623,17 +621,17 @@ export default function UsersManagement() {
 
                 <div className="bg-white rounded-lg shadow-md">
                     <div className="border-b border-gray-200">
-                        <nav className="flex">
+                        <nav className="flex flex-col">
                             <button
                                 onClick={() => {
                                     setActiveTab('students');
                                     setSearchTerm('');
                                     setSelectedFilter('all');
                                 }}
-                                className={`px-6 py-4 font-medium transition-colors ${
+                                className={`px-6 py-4 font-medium transition-colors text-left ${
                                     activeTab === 'students'
-                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                        : 'text-gray-600 hover:text-blue-600'
+                                        ? 'border-l-4 border-blue-600 text-blue-600 bg-blue-50'
+                                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                                 }`}
                             >
                                 👨‍🎓 Uczniowie ({students.length})
@@ -643,10 +641,10 @@ export default function UsersManagement() {
                                     setActiveTab('teachers');
                                     setSearchTerm('');
                                 }}
-                                className={`px-6 py-4 font-medium transition-colors ${
+                                className={`px-6 py-4 font-medium transition-colors text-left ${
                                     activeTab === 'teachers'
-                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                        : 'text-gray-600 hover:text-blue-600'
+                                        ? 'border-l-4 border-blue-600 text-blue-600 bg-blue-50'
+                                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                                 }`}
                             >
                                 👨‍🏫 Nauczyciele ({teachers.length})
@@ -656,10 +654,10 @@ export default function UsersManagement() {
                                     setActiveTab('guardians');
                                     setSearchTerm('');
                                 }}
-                                className={`px-6 py-4 font-medium transition-colors ${
+                                className={`px-6 py-4 font-medium transition-colors text-left ${
                                     activeTab === 'guardians'
-                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                        : 'text-gray-600 hover:text-blue-600'
+                                        ? 'border-l-4 border-blue-600 text-blue-600 bg-blue-50'
+                                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                                 }`}
                             >
                                 👨‍👩‍👦 Opiekunowie ({guardians.length})
@@ -669,10 +667,10 @@ export default function UsersManagement() {
                                     setActiveTab('administrators');
                                     setSearchTerm('');
                                 }}
-                                className={`px-6 py-4 font-medium transition-colors ${
+                                className={`px-6 py-4 font-medium transition-colors text-left ${
                                     activeTab === 'administrators'
-                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                        : 'text-gray-600 hover:text-blue-600'
+                                        ? 'border-l-4 border-blue-600 text-blue-600 bg-blue-50'
+                                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                                 }`}
                             >
                                 🔑 Administratorzy ({administrators.length})
@@ -847,19 +845,19 @@ export default function UsersManagement() {
 
                         {activeTab === 'teachers' && (
                             <div>
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-bold text-gray-900">Lista nauczycieli</h2>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <input
                                             type="text"
                                             placeholder="🔍 Szukaj..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
                                         />
                                         <button
                                             onClick={() => handleCreateUser('nauczyciel')}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium w-full sm:w-auto"
                                         >
                                             ➕ Dodaj nauczyciela
                                         </button>
@@ -915,19 +913,19 @@ export default function UsersManagement() {
 
                         {activeTab === 'guardians' && (
                             <div>
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-bold text-gray-900">Lista opiekunów</h2>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <input
                                             type="text"
                                             placeholder="🔍 Szukaj..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
                                         />
                                         <button
                                             onClick={() => handleCreateUser('opiekun')}
-                                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+                                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium w-full sm:w-auto"
                                         >
                                             ➕ Dodaj opiekuna
                                         </button>
@@ -983,15 +981,15 @@ export default function UsersManagement() {
 
                         {activeTab === 'administrators' && (
                             <div>
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-bold text-gray-900">Lista administratorów</h2>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <input
                                             type="text"
                                             placeholder="🔍 Szukaj..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
                                         />
                                     </div>
                                 </div>

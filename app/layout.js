@@ -10,7 +10,7 @@ export default function RootLayout({ children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const pathname = usePathname();
     
-    // Ukryj navbar na stronach autoryzacji
+   
     const hideNavbar = pathname?.startsWith('/auth');
 
     return (

@@ -14,7 +14,7 @@ export default function TechnicalReportsPage() {
     const [loading, setLoading] = useState(true);
     const [selectedLocation, setSelectedLocation] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortBy, setSortBy] = useState('date'); // date, location
+    const [sortBy, setSortBy] = useState('date');
 
     useEffect(() => {
         loadData();
@@ -49,7 +49,7 @@ export default function TechnicalReportsPage() {
 
         try {
             await clearTechnicalReport(id);
-            // Odśwież dane
+       
             await loadData();
         } catch (error) {
             console.error('Błąd usuwania zgłoszenia:', error);
@@ -57,16 +57,16 @@ export default function TechnicalReportsPage() {
         }
     };
 
-    // Filtruj zgłoszenia
+
     const filteredReports = reports.filter(report => {
         const room = report.sala;
         
-        // Filtr po lokalizacji
+      
         if (selectedLocation && room?.lokalizacja !== selectedLocation) {
             return false;
         }
 
-        // Wyszukiwanie
+       
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
             const matchesRemark = report.uwaga_do_sprzetu?.toLowerCase().includes(searchLower);
@@ -81,7 +81,7 @@ export default function TechnicalReportsPage() {
         return true;
     });
 
-    // Sortowanie
+  
     const sortedReports = [...filteredReports].sort((a, b) => {
         if (sortBy === 'date') {
             return new Date(b.data) - new Date(a.data);
@@ -111,7 +111,7 @@ export default function TechnicalReportsPage() {
                 <p className="text-gray-600">Uwagi dotyczące sprzętu i problemów technicznych</p>
             </div>
 
-            {/* Statystyki */}
+            
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <div className="text-3xl font-bold text-blue-600">{filteredReports.length}</div>
@@ -142,7 +142,7 @@ export default function TechnicalReportsPage() {
                 </div>
             </div>
 
-            {/* Filtry */}
+         
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -201,7 +201,7 @@ export default function TechnicalReportsPage() {
                 )}
             </div>
 
-            {/* Lista zgłoszeń */}
+           
             {sortedReports.length === 0 ? (
                 <div className="bg-white rounded-lg shadow-md p-12 text-center">
                     <div className="text-6xl mb-4">✅</div>

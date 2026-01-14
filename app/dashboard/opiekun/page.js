@@ -4,9 +4,7 @@ import { useAuth } from '/context/AuthContext';
 import { getOpiekunStudents } from '/lib/api/guardian.api';
 import { getPresenceForStudent } from '/lib/api/presence.api';
 import { getGuardianHomeworks, getHomeworksForGroup, getHomeworksForGroupWithAnswers } from '/lib/api/homework.api';
-// Removed duplicate import of getHomeworksForGroupWithAnswers
 import { getHomeworkAnswers } from '/lib/api/homework.api';
-// Removed duplicate import of getHomeworksForGroupWithAnswers
 import { getStudentById } from '/lib/api/student.api';
 import { getLessonsForGroup } from '/lib/api/lesson.api';
 import { getUserIdFromToken } from '/lib/auth';
@@ -28,19 +26,18 @@ export default function GuardianDashboard() {
 
     async function loadData(opiekunId) {
         try {
-            // Pobierz uczniów opiekuna
+            
             const uczniowie = await getOpiekunStudents(opiekunId);
             setStudents(uczniowie);
             
-            // Ustaw pierwszego ucznia jako domyślnie wybranego
-            // i użyj lokalnego ID do pobierania danych, bo aktualizacja stanu jest asynchroniczna
+        
             let studentIdForFetch = selectedStudent;
             if (uczniowie.length > 0) {
                 setSelectedStudent(uczniowie[0].id_ucznia);
                 studentIdForFetch = uczniowie[0].id_ucznia;
             }
 
-            // Pobierz obecności dla każdego ucznia
+           
             const presenceResults = await Promise.all(
                 uczniowie.map((u) => getPresenceForStudent(u.id_ucznia))
             );
@@ -53,10 +50,10 @@ export default function GuardianDashboard() {
             console.log('Sample presence item:', presenceResults[0]?.[0]);
             setPresence(presenceMap);
 
-            // Pobierz unikalne ID grup uczniów
+           
             const uniqueGroupIds = [...new Set(uczniowie.map(u => u.id_grupa).filter(Boolean))];
             
-            // Pobierz zadania dla każdej grupy ucznia
+            
             const allTasksPerGroup = await Promise.all(
                 uniqueGroupIds.map(async (groupId) => {
                     try {
@@ -69,14 +66,14 @@ export default function GuardianDashboard() {
                 })
             );
 
-            // Jeśli wybrano ucznia (lokalny ID), pobierz tylko jego odpowiedzi
+            
             let studentAnswers = [];
             console.log('Student selected for fetch:', studentIdForFetch);
             if (studentIdForFetch) {
-                // Debug: pokaż wszystkie zadania dla grup
+              
                 console.log('All tasks per group (raw):', allTasksPerGroup);
 
-                // Pobierz odpowiedzi dla każdego zadania
+                
                 const allTasks = allTasksPerGroup.flat();
                 console.log('All tasks (flattened):', allTasks);
 
@@ -97,7 +94,7 @@ export default function GuardianDashboard() {
                 studentAnswers = answersPerTask.flat();
                 console.log('Student answers (flattened):', studentAnswers);
 
-                // Połącz zadania z odpowiedziami tylko wybranego ucznia
+          
                 const tasksWithStudentAnswers = allTasks.map(task => ({
                     ...task,
                     odpowiedzi: studentAnswers.filter(ans => ans.id_zadania === task.id_zadania)
@@ -110,7 +107,7 @@ export default function GuardianDashboard() {
                 setHomeworks(allTasksPerGroup.flat());
             }
 
-            // Pobierz nadchodzące zajęcia dla wszystkich uczniów
+      
             const lessonsPerGroup = await Promise.all(
                 uniqueGroupIds.map(async (groupId) => {
                     try {
@@ -123,7 +120,7 @@ export default function GuardianDashboard() {
                 })
             );
 
-            // Połącz wszystkie zajęcia i filtruj nadchodzące
+          
             const now = new Date();
             const allLessons = lessonsPerGroup.flat();
             const upcoming = allLessons
@@ -143,7 +140,7 @@ export default function GuardianDashboard() {
         }
     }
 
-    // When selected student changes, fetch their answers for all loaded homeworks
+  
     useEffect(() => {
         async function fetchAnswersForSelectedStudent() {
             if (!selectedStudent || homeworks.length === 0) return;
@@ -175,10 +172,10 @@ export default function GuardianDashboard() {
         fetchAnswersForSelectedStudent();
     }, [selectedStudent]);
 
-    // Zbierz wszystkie obecności w jedną tablicę
+   
     const allPresence = Object.values(presence).flat();
     
-    // Filtruj dane według wybranego ucznia
+
     const filteredPresence = selectedStudent 
         ? allPresence.filter(p => p.id_ucznia === selectedStudent)
         : [];
@@ -189,14 +186,14 @@ export default function GuardianDashboard() {
 
     const selectedStudentData = students.find(s => s.id_ucznia === selectedStudent);
     
-    // Filtruj prace domowe dla grupy wybranego ucznia
+  
     const filteredHomeworks = selectedStudent && selectedStudentData?.id_grupa
         ? homeworks.filter(hw => hw.id_grupy === selectedStudentData.id_grupa)
         : [];
     
     const filteredLessons = selectedStudent && selectedStudentData?.id_grupa
         ? upcomingLessons.filter(lesson => {
-            // Pobierz grupę ucznia i porównaj z grupą zajęć
+          
             return lesson.id_grupy === selectedStudentData.id_grupa;
         })
         : [];
@@ -221,7 +218,7 @@ export default function GuardianDashboard() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50">
             <div className="p-6 max-w-7xl mx-auto">
-                {/* Header z gradient */}
+              
                 <header className="mb-8">
                     <div className="bg-gradient-to-r from-orange-500 to-purple-600 rounded-3xl shadow-2xl p-8 text-white">
                         <div className="flex items-center gap-4">
@@ -248,8 +245,7 @@ export default function GuardianDashboard() {
                             </div>
                         </div>
                     </div>
-                    
-                    {/* Wybór ucznia */}
+               
                     <div className="mt-6 bg-white rounded-2xl shadow-xl p-6 border border-orange-100">
                         <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                             <span className="text-lg">🎯</span>
@@ -270,10 +266,10 @@ export default function GuardianDashboard() {
                     </div>
                 </header>
 
-                {/* Bento Grid Layout */}
+             
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    {/* Lista uczniów z frekwencją - duża karta */}
+                   
                     <section className="lg:col-span-8 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
@@ -326,7 +322,7 @@ export default function GuardianDashboard() {
                         </div>
                     </section>
 
-                    {/* Quick stats */}
+               
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl shadow-xl p-6 text-white">
                             <div className="flex items-center gap-3">
@@ -364,16 +360,16 @@ export default function GuardianDashboard() {
                         </div>
                     </div>
 
-                    {/* Ostatnie obecności */}
+                
                     <div className="lg:col-span-6 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex flex-col min-[420px]:flex-row min-[420px]:justify-between min-[420px]:items-center mb-6 gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
                                     <span className="text-white text-xl">📋</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-800">Ostatnie obecności</h3>
                             </div>
-                            <Link href="/dashboard/shared_components/students_presence" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition">
+                            <Link href="/dashboard/shared_components/students_presence" className="text-sm bg-gradient-to-r from-orange-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:shadow-lg transition text-center">
                                 Zobacz wszystkie
                             </Link>
                         </div>
@@ -384,32 +380,32 @@ export default function GuardianDashboard() {
                                     return (
                                         <div
                                             key={presenceItem.id_obecnosci}
-                                            className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-xl border border-orange-200 hover:border-orange-400 transition"
+                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-purple-50 rounded-xl border border-orange-200 hover:border-orange-400 transition gap-3"
                                         >
                                             <div className="flex items-center space-x-4 flex-1 min-w-0">
-                                                <div className={`w-4 h-4 rounded-full flex-shrink-0 ${
-                                                    presenceItem.czyObecny ? 'bg-green-500' : 'bg-red-500'
-                                                }`}></div>
+                                                <div className={`w-4 h-4 rounded-full flex-shrink-0 ${presenceItem.czyObecny ? 'bg-green-500' : 'bg-red-500'}`}></div>
                                                 <div className="min-w-0 flex-1">
                                                     <div className="font-semibold text-gray-800 truncate">
                                                         {student?.user?.imie} {student?.user?.nazwisko}
                                                     </div>
-                                                    <div className="text-sm text-gray-600 truncate">
+                                                    <div className="text-sm text-gray-600 break-words">
                                                         {presenceItem.zajecia?.tematZajec || 'Brak tematu'}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right ml-3 flex-shrink-0">
-                                                <div className="text-sm text-gray-600">
+                                            <div className="flex-shrink-0 text-right">
+                                                <div className="text-sm text-gray-600 mb-1">
                                                     {presenceItem.zajecia?.data
                                                         ? new Date(presenceItem.zajecia.data).toLocaleDateString('pl-PL')
                                                         : 'Brak daty'}
                                                 </div>
-                                                <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
-                                                    presenceItem.czyObecny ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                    presenceItem.czyObecny 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : 'bg-red-100 text-red-800'
                                                 }`}>
                                                     {presenceItem.czyObecny ? 'Obecny' : 'Nieobecny'}
-                                                </div>
+                                                </span>
                                             </div>
                                         </div>
                                     );
@@ -423,7 +419,7 @@ export default function GuardianDashboard() {
                         </div>
                     </div>
 
-                    {/* Prace domowe */}
+                
                     <div className="lg:col-span-6 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
@@ -477,7 +473,7 @@ export default function GuardianDashboard() {
                         </div>
                     </div>
 
-                    {/* Nadchodzące zajęcia */}
+                
                     <div className="lg:col-span-8 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">
@@ -515,7 +511,7 @@ export default function GuardianDashboard() {
                         </div>
                     </div>
 
-                    {/* Szczegóły wybranego ucznia */}
+                   
                     <div className="lg:col-span-4 bg-white rounded-3xl shadow-xl p-8 border border-orange-100">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="bg-gradient-to-r from-orange-500 to-purple-500 p-3 rounded-2xl">

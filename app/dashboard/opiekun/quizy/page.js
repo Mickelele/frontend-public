@@ -75,8 +75,8 @@ export default function GuardianQuizzes() {
                     try {
                         const quizData = await getQuizById(result.Quiz_id_quizu);
                         
-                        // Pobierz pytania dla quizu i oblicz maksymalną liczbę punktów
-                        let calculatedMaxPoints = 10; // domyślnie 10
+                     
+                        let calculatedMaxPoints = 10;
                         try {
                             const questions = await getQuestionsByQuiz(result.Quiz_id_quizu);
                             if (questions && Array.isArray(questions) && questions.length > 0) {

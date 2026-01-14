@@ -211,21 +211,21 @@ export default function AdminPrizesPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800">Zarządzanie nagrodami</h1>
                         <p className="text-gray-600 mt-1">Dodawaj, edytuj i usuwaj nagrody dla uczniów</p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         <button
                             onClick={loadHistory}
-                            className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium shadow-md transition"
+                            className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium shadow-md transition w-full sm:w-auto"
                         >
                             📜 Historia odbiorów
                         </button>
                         <button
                             onClick={() => handleOpenModal()}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium shadow-md transition"
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium shadow-md transition w-full sm:w-auto"
                         >
                             ➕ Dodaj nagrodę
                         </button>
@@ -502,7 +502,7 @@ export default function AdminPrizesPage() {
                                         console.log('Historia item:', item);
                                         return (
                                             <div key={item.id_relacji || index} className="bg-gray-50 rounded-lg p-5 border border-gray-200 hover:border-purple-300 transition">
-                                                <div className="flex justify-between items-start gap-4">
+                                                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <span className="text-2xl">🎁</span>
@@ -530,7 +530,7 @@ export default function AdminPrizesPage() {
                                                         </div>
                                                     </div>
                                                     
-                                                    <div className="text-right bg-white rounded-lg p-3 border border-gray-200 min-w-[140px]">
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200 w-full lg:w-auto lg:min-w-[140px] lg:text-right">
                                                         <p className="text-xs text-gray-500 mb-1">Data odbioru</p>
                                                         <p className="text-sm font-bold text-gray-800">
                                                             {item.data ? new Date(item.data).toLocaleDateString('pl-PL', {

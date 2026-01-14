@@ -15,7 +15,7 @@ export default function TeacherList({ renderCarousel = false }) {
                 const data = await getTeachers();
                 console.log('Fetched teachers:', data);
 
-                // Enrich each teacher with full user profile (to get `zdjecie` and other fields)
+                
                 const enriched = await Promise.all(
                     (data || []).map(async (t) => {
                         try {

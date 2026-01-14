@@ -184,12 +184,12 @@ export default function GradesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-6">
             <div className="max-w-7xl mx-auto">
               
-                <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg shadow-lg p-6 mb-6">
-                    <h1 className="text-3xl font-bold mb-2">📚 Moje oceny i zadania</h1>
-                    <p className="text-purple-100">Przeglądaj swoje prace domowe i oceny</p>
+                <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg shadow-lg p-4 md:p-6 mb-4 md:mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2">📚 Moje oceny i zadania</h1>
+                    <p className="text-purple-100 text-sm md:text-base">Przeglądaj swoje prace domowe i oceny</p>
                 </div>
 
                 {error && (
@@ -239,10 +239,10 @@ export default function GradesPage() {
                 </div>
 
   
-                <div className="flex gap-2 mb-6">
+                <div className="flex flex-col sm:flex-row gap-2 mb-4 md:mb-6 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('all')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition ${
+                        className={`px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold transition text-sm md:text-base whitespace-nowrap ${
                             activeTab === 'all'
                                 ? 'bg-blue-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -252,7 +252,7 @@ export default function GradesPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('pending')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition ${
+                        className={`px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold transition text-sm md:text-base whitespace-nowrap ${
                             activeTab === 'pending'
                                 ? 'bg-yellow-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -262,7 +262,7 @@ export default function GradesPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('graded')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition ${
+                        className={`px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold transition text-sm md:text-base whitespace-nowrap ${
                             activeTab === 'graded'
                                 ? 'bg-green-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'

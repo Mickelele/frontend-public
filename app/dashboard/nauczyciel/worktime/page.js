@@ -267,25 +267,28 @@ export default function TeacherLessonsPage() {
         <div className="min-h-screen bg-gray-50 p-4">
             <div className="max-w-7xl mx-auto">
                 <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <h1 className="text-xl font-bold text-gray-800">Moje lekcje</h1>
-                        <div className="flex items-center space-x-3">
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-4">Moje lekcje</h1>
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+                        <div className="flex items-center justify-center gap-2 order-2 sm:order-1">
                             <button
                                 onClick={() => changeMonth(-1)}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm transition"
+                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm transition flex-shrink-0"
                             >
-                                ←
+                                <span className="sm:hidden">←</span>
+                                <span className="hidden sm:inline">← Poprzedni</span>
                             </button>
 
-                            <span className="text-lg font-semibold text-gray-700 min-w-[180px] text-center">
+                            <span className="text-base md:text-lg font-semibold text-gray-700 text-center min-w-[140px] md:min-w-[180px]">
                                 {getMonthName(selectedDate)}
                             </span>
 
                             <button
                                 onClick={() => changeMonth(1)}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm transition"
+                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm transition flex-shrink-0"
                             >
-                                →
+                                <span className="sm:hidden">→</span>
+                                <span className="hidden sm:inline">Następny →</span>
                             </button>
                         </div>
                     </div>

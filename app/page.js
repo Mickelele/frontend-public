@@ -24,7 +24,7 @@ export default function HomePage() {
                         Kursy programowania i{" "}
                         <span className="text-orange-400">matematyki</span>
                         <br className="hidden md:block" />
-                        dla <span className="text-orange-400">dzieci i młodzieży</span>
+                        <span className="block min-[800px]:inline">dla </span><span className="text-orange-400">dzieci i młodzieży</span>
                     </h1>
 
                     <p className="text-lg md:text-xl text-white/90 mb-8 font-medium">
@@ -82,7 +82,7 @@ export default function HomePage() {
            
             <section
                 id="course-calendar"
-                className="max-w-6xl mx-auto px-6 py-20"
+                className="max-w-6xl mx-auto px-6 py-20 hidden min-[500px]:block"
             >
                 <div className="bg-gradient-to-br from-orange-50 to-white p-8 rounded-3xl shadow-2xl border border-orange-100">
                     <h3 className="text-4xl font-extrabold mb-12 text-center text-orange-600">

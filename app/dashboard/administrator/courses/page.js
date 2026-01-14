@@ -38,7 +38,7 @@ export default function CoursesManagementPage() {
     const [activeTab, setActiveTab] = useState('courses');
     const [loading, setLoading] = useState(true);
 
-    // Data states
+    
     const [courses, setCourses] = useState([]);
     const [groups, setGroups] = useState([]);
     const [lessons, setLessons] = useState([]);
@@ -46,7 +46,7 @@ export default function CoursesManagementPage() {
     const [teachers, setTeachers] = useState([]);
     const [students, setStudents] = useState([]);
 
-    // Modal states
+    
     const [showCourseModal, setShowCourseModal] = useState(false);
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showLessonModal, setShowLessonModal] = useState(false);
@@ -64,7 +64,7 @@ export default function CoursesManagementPage() {
     const [availabilityResults, setAvailabilityResults] = useState(null);
     const [availabilityLocationFilter, setAvailabilityLocationFilter] = useState('');
 
-    // Edit states
+   
     const [editingCourse, setEditingCourse] = useState(null);
     const [editingGroup, setEditingGroup] = useState(null);
     const [editingLesson, setEditingLesson] = useState(null);
@@ -83,7 +83,7 @@ export default function CoursesManagementPage() {
     const [searchLessonTerm, setSearchLessonTerm] = useState('');
     const [selectedLocationFilterRooms, setSelectedLocationFilterRooms] = useState('');
 
-    // Form data
+
     const [courseForm, setCourseForm] = useState({ 
         nazwa_kursu: '', 
         data_rozpoczecia: '', 
@@ -139,7 +139,7 @@ export default function CoursesManagementPage() {
                     getAllRooms()
                 ]);
                 
-                // Pobierz zajęcia dla wszystkich grup
+                
                 const allLessons = [];
                 for (const group of (groupsData || [])) {
                     try {
@@ -164,10 +164,10 @@ export default function CoursesManagementPage() {
         setLoading(false);
     };
 
-    // Course handlers
+   
     const handleSaveCourse = async () => {
         try {
-            // Walidacja dat
+           
             const startDate = new Date(courseForm.data_rozpoczecia);
             const endDate = new Date(courseForm.data_zakonczenia);
             
@@ -213,7 +213,7 @@ export default function CoursesManagementPage() {
         }
     };
 
-    // Group handlers
+ 
     const handleSaveGroup = async () => {
         try {
             const formData = {
@@ -280,7 +280,7 @@ export default function CoursesManagementPage() {
             console.log('Students in group:', studentsInGroup);
             console.log('All students:', allStudents);
             
-            // Pobierz dane użytkowników dla uczniów w grupie
+         
             const studentsWithUserData = await Promise.all(
                 (studentsInGroup || []).map(async (student) => {
                     try {
@@ -293,7 +293,7 @@ export default function CoursesManagementPage() {
                 })
             );
             
-            // Pobierz dane użytkowników dla wszystkich uczniów
+           
             const allStudentsWithUserData = await Promise.all(
                 (allStudents || []).map(async (student) => {
                     try {
@@ -319,14 +319,14 @@ export default function CoursesManagementPage() {
 
     const handleAddStudentToGroup = async (studentId) => {
         try {
-            // Przypisz ucznia do grupy przez aktualizację id_grupa
+       
             await updateStudent(studentId, { id_grupa: selectedGroup.id_grupa });
             
-            // Zwiększ liczbę studentów w grupie
+        
             await adjustStudentCount(selectedGroup.id_grupa, 1);
             
             await handleManageStudents(selectedGroup);
-            // Odśwież listę grup żeby zaktualizować licznik
+           
             const updatedGroups = await getAllGroups();
             setGroups(updatedGroups || []);
         } catch (error) {
@@ -337,14 +337,14 @@ export default function CoursesManagementPage() {
 
     const handleRemoveStudentFromGroup = async (studentId) => {
         try {
-            // Usuń ucznia z grupy - ustaw id_grupa na null
+          
             await updateStudent(studentId, { id_grupa: null });
             
-            // Zmniejsz liczbę studentów w grupie
+        
             await adjustStudentCount(selectedGroup.id_grupa, -1);
             
             await handleManageStudents(selectedGroup);
-            // Odśwież listę grup żeby zaktualizować licznik
+        
             const updatedGroups = await getAllGroups();
             setGroups(updatedGroups || []);
         } catch (error) {
@@ -353,7 +353,7 @@ export default function CoursesManagementPage() {
         }
     };
 
-    // Lesson handlers
+
     const handleSaveLesson = async () => {
         try {
             const formData = {
@@ -398,13 +398,13 @@ export default function CoursesManagementPage() {
             
             setBulkLessonSuccess(`Pomyślnie utworzono ${result.zajecia?.length || 'wiele'} zajęć dla grupy`);
             
-            // Reset formularza
+         
             setBulkLessonForm({ id_grupa: '' });
             
-            // Odśwież dane
+        
             loadData();
             
-            // Zamknij modal po 2 sekundach
+         
             setTimeout(() => {
                 setShowBulkLessonModal(false);
                 setBulkLessonSuccess(null);
@@ -420,8 +420,7 @@ export default function CoursesManagementPage() {
 
     const handleEditLesson = (lesson) => {
         setEditingLesson(lesson);
-        
-        // Znajdź salę i ustaw lokalizację
+       
         const room = rooms.find(r => r.id_sali === lesson.Sala_id_sali);
         if (room) {
             setSelectedLocation(room.lokalizacja);
@@ -448,7 +447,7 @@ export default function CoursesManagementPage() {
         }
     };
 
-    // Room handlers
+   
     const handleSaveRoom = async () => {
         try {
             const numer = parseInt(roomForm.numer);
@@ -488,13 +487,13 @@ export default function CoursesManagementPage() {
             return;
         }
         
-        // Sprawdź czy przedział czasowy jest poprawny
+        
         if (godzina_od >= godzina_do) {
             alert('Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia');
             return;
         }
         
-        // Znajdź zajęcia w danej sali w danym dniu
+        
         const roomLessons = lessons.filter(lesson => {
             if (lesson.Sala_id_sali !== parseInt(id_sali)) return false;
             if (!lesson.data) return false;
@@ -503,20 +502,20 @@ export default function CoursesManagementPage() {
             return lessonDate === data;
         });
         
-        // Sprawdź konflikty czasowe
+        
         const conflicts = roomLessons.filter(lesson => {
             const group = groups.find(g => g.id_grupa === lesson.id_grupy);
             if (!group || !group.godzina) return false;
             
             const lessonStart = group.godzina.substring(0, 5);
-            // Zakładamy zajęcia trwają 1.5h (90 minut)
+            
             const [hours, minutes] = lessonStart.split(':').map(Number);
             const totalMinutes = hours * 60 + minutes + 90;
             const endHours = Math.floor(totalMinutes / 60);
             const endMinutes = totalMinutes % 60;
             const lessonEnd = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
             
-            // Sprawdź nakładanie się
+          
             return !(godzina_do <= lessonStart || godzina_od >= lessonEnd);
         });
         
@@ -552,7 +551,7 @@ export default function CoursesManagementPage() {
         });
     };
 
-    // Funkcja sprawdzająca czy sala jest zajęta w danym terminie
+   
     const isRoomOccupied = (roomId, date, groupId) => {
         if (!date || !groupId) return false;
         
@@ -561,14 +560,14 @@ export default function CoursesManagementPage() {
         
         const selectedTime = selectedGroup.godzina.substring(0, 5);
         const [hours, minutes] = selectedTime.split(':').map(Number);
-        const totalMinutes = hours * 60 + minutes + 90; // 90 minut trwania
+        const totalMinutes = hours * 60 + minutes + 90; 
         const endHours = Math.floor(totalMinutes / 60);
         const endMinutes = totalMinutes % 60;
         const selectedEndTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
         
-        // Znajdź zajęcia w tej samej sali, w tym samym dniu
+       
         const conflicts = lessons.filter(lesson => {
-            // Pomiń edytowane zajęcia
+           
             if (editingLesson && lesson.id_zajec === editingLesson.id_zajec) return false;
             
             if (lesson.Sala_id_sali !== parseInt(roomId)) return false;
@@ -587,7 +586,7 @@ export default function CoursesManagementPage() {
             const lEndMinutes = lTotalMinutes % 60;
             const lessonEnd = `${String(lEndHours).padStart(2, '0')}:${String(lEndMinutes).padStart(2, '0')}`;
             
-            // Sprawdź nakładanie się przedziałów czasowych
+           
             return !(selectedEndTime <= lessonStart || selectedTime >= lessonEnd);
         });
         
@@ -625,7 +624,7 @@ export default function CoursesManagementPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
+                
                 <div className="mb-8">
                     <h1 className="text-4xl font-bold text-gray-800 mb-2">
                         📚 Zarządzanie Kursami
@@ -635,8 +634,8 @@ export default function CoursesManagementPage() {
                     </p>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex gap-2 mb-6 bg-white p-2 rounded-lg shadow">
+              
+                <div className="flex flex-col sm:flex-row gap-2 mb-6 bg-white p-2 rounded-lg shadow">
                     <button
                         onClick={() => setActiveTab('courses')}
                         className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
@@ -679,7 +678,7 @@ export default function CoursesManagementPage() {
                     </button>
                 </div>
 
-                {/* Content */}
+               
                 {loading ? (
                     <div className="text-center py-12">
                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -687,7 +686,7 @@ export default function CoursesManagementPage() {
                     </div>
                 ) : (
                     <>
-                        {/* Courses Tab */}
+                        
                         {activeTab === 'courses' && (
                             <div>
                                 <div className="flex justify-between items-center mb-6">
@@ -753,13 +752,13 @@ export default function CoursesManagementPage() {
                             </div>
                         )}
 
-                        {/* Groups Tab */}
+                       
                         {activeTab === 'groups' && (
                             <div>
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-semibold text-gray-800">
                                         Grupy ({groups.filter(group => {
-                                            // Znajdź lokalizację grupy z pierwszych zajęć
+                                           
                                             const groupLessons = lessons.filter(l => l.id_grupy === group.id_grupa);
                                             const firstLesson = groupLessons.length > 0 ? groupLessons[0] : null;
                                             const room = firstLesson ? rooms.find(r => r.id_sali === firstLesson.Sala_id_sali) : null;
@@ -777,13 +776,13 @@ export default function CoursesManagementPage() {
                                             setGroupForm({ Kurs_id_kursu: '', id_nauczyciela: '', godzina: '', dzien_tygodnia: '' });
                                             setShowGroupModal(true);
                                         }}
-                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all w-full sm:w-auto"
                                     >
                                         ➕ Dodaj Grupę
                                     </button>
                                 </div>
 
-                                {/* Filters */}
+                         
                                 <div className="bg-white p-4 rounded-lg shadow-md mb-6">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
@@ -845,7 +844,7 @@ export default function CoursesManagementPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {groups
                                         .filter(group => {
-                                            // Znajdź lokalizację grupy z pierwszych zajęć
+                                         
                                             const groupLessons = lessons.filter(l => l.id_grupy === group.id_grupa);
                                             const firstLesson = groupLessons.length > 0 ? groupLessons[0] : null;
                                             const room = firstLesson ? rooms.find(r => r.id_sali === firstLesson.Sala_id_sali) : null;
@@ -860,7 +859,7 @@ export default function CoursesManagementPage() {
                                         const course = courses.find(c => c.id_kursu === group.Kurs_id_kursu);
                                         const teacher = teachers.find(t => t.id_nauczyciela === group.id_nauczyciela);
                                         
-                                        // Znajdź lokalizację grupy z dowolnych zajęć
+                                       
                                         const groupLessons = lessons.filter(l => l.id_grupy === group.id_grupa);
                                         const anyLesson = groupLessons.length > 0 ? groupLessons[0] : null;
                                         const room = anyLesson ? rooms.find(r => r.id_sali === anyLesson.Sala_id_sali) : null;
@@ -951,10 +950,10 @@ export default function CoursesManagementPage() {
                             </div>
                         )}
 
-                        {/* Lessons Tab */}
+                      
                         {activeTab === 'lessons' && (
                             <div>
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-semibold text-gray-800">
                                         Zajęcia ({lessons.filter(lesson => {
                                             const group = groups.find(g => g.id_grupa === lesson.id_grupy);
@@ -964,7 +963,7 @@ export default function CoursesManagementPage() {
                                             return matchesCourse && matchesGroup && matchesSearch;
                                         }).length})
                                     </h2>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <button
                                             onClick={() => {
                                                 setEditingLesson(null);
@@ -977,7 +976,7 @@ export default function CoursesManagementPage() {
                                                 });
                                                 setShowLessonModal(true);
                                             }}
-                                            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all w-full sm:w-auto"
                                         >
                                             ➕ Dodaj Zajęcia
                                         </button>
@@ -988,14 +987,14 @@ export default function CoursesManagementPage() {
                                                 setGroupSearchTerm('');
                                                 setShowBulkLessonModal(true);
                                             }}
-                                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all w-full sm:w-auto"
                                         >
                                             🎯 Stwórz wiele zajęć
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* Filtry i wyszukiwanie */}
+                            
                                 <div className="bg-white rounded-lg shadow-md p-4 mb-6">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <div>
@@ -1155,14 +1154,14 @@ export default function CoursesManagementPage() {
                             </div>
                         )}
 
-                        {/* Rooms Tab */}
+                     
                         {activeTab === 'rooms' && (
                             <div>
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-semibold text-gray-800">
                                         Sale ({rooms.filter(room => !selectedLocationFilterRooms || room.lokalizacja === selectedLocationFilterRooms).length})
                                     </h2>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <button
                                             onClick={() => {
                                                 setAvailabilityForm({
@@ -1175,7 +1174,7 @@ export default function CoursesManagementPage() {
                                                 setAvailabilityLocationFilter('');
                                                 setShowRoomAvailability(true);
                                             }}
-                                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all w-full sm:w-auto"
                                         >
                                             🔍 Sprawdź Dostępność
                                         </button>
@@ -1185,14 +1184,14 @@ export default function CoursesManagementPage() {
                                                 setRoomForm({ numer: '', lokalizacja: '', ilosc_miejsc: '' });
                                                 setShowRoomModal(true);
                                             }}
-                                            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                                            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all w-full sm:w-auto"
                                         >
                                             ➕ Dodaj Salę
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* Filtr po lokalizacji */}
+                            
                                 <div className="bg-white rounded-lg shadow-md p-4 mb-6">
                                     <div className="flex items-center gap-4">
                                         <div className="flex-1">
@@ -1277,7 +1276,7 @@ export default function CoursesManagementPage() {
                 )}
             </div>
 
-            {/* Course Modal */}
+        
             {showCourseModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
@@ -1347,7 +1346,7 @@ export default function CoursesManagementPage() {
                 </div>
             )}
 
-            {/* Group Modal */}
+        
             {showGroupModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
@@ -1445,7 +1444,7 @@ export default function CoursesManagementPage() {
                 </div>
             )}
 
-            {/* Lesson Modal */}
+            
             {showLessonModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1538,7 +1537,7 @@ export default function CoursesManagementPage() {
                                         {rooms
                                             .filter(room => room.lokalizacja === selectedLocation)
                                             .filter(room => {
-                                                // Jeśli wybrano grupę i datę, pokaż tylko wolne sale
+                                              
                                                 if (lessonForm.id_grupy && lessonForm.data) {
                                                     return !isRoomOccupied(room.id_sali, lessonForm.data, lessonForm.id_grupy);
                                                 }
@@ -1597,7 +1596,7 @@ export default function CoursesManagementPage() {
                 </div>
             )}
 
-            {/* Room Modal */}
+        
             {showRoomModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
@@ -1668,7 +1667,7 @@ export default function CoursesManagementPage() {
                 </div>
             )}
 
-            {/* Student Management Modal */}
+          
             {showStudentManagement && selectedGroup && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -1678,7 +1677,7 @@ export default function CoursesManagementPage() {
                             </h3>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6">
-                            {/* Search input */}
+                            
                             <div className="mb-6">
                                 <input
                                     type="text"
@@ -1690,7 +1689,7 @@ export default function CoursesManagementPage() {
                             </div>
                             
                             <div className="grid grid-cols-2 gap-6">
-                                {/* Students in group */}
+                              
                                 <div>
                                     <h4 className="text-lg font-semibold text-gray-800 mb-4">
                                         Uczniowie w grupie ({groupStudents.filter(student => {
@@ -1738,7 +1737,7 @@ export default function CoursesManagementPage() {
                                     </div>
                                 </div>
 
-                                {/* Available students */}
+                           
                                 <div>
                                     <h4 className="text-lg font-semibold text-gray-800 mb-4">
                                         Dostępni Uczniowie
@@ -1792,7 +1791,7 @@ export default function CoursesManagementPage() {
                 </div>
             )}
 
-            {/* Room Availability Modal */}
+           
             {showRoomAvailability && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -1884,7 +1883,7 @@ export default function CoursesManagementPage() {
                                 🔍 Sprawdź
                             </button>
 
-                            {/* Wyniki sprawdzania */}
+                          
                             {availabilityResults && (
                                 <div className="mt-6">
                                     <div className={`p-6 rounded-lg border-2 ${
@@ -1981,7 +1980,6 @@ export default function CoursesManagementPage() {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
             {showDeleteConfirm && deleteTarget && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
@@ -2051,7 +2049,6 @@ export default function CoursesManagementPage() {
                 </div>
             )}
 
-            {/* Modal masowego tworzenia zajęć */}
             {showBulkLessonModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">

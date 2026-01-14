@@ -262,10 +262,10 @@ export default function SubstitutesPage() {
                     <p className="text-gray-600 mt-1">Zarządzaj zastępstwami i przeglądaj dostępne zastępstwa</p>
                 </div>
 
-                <div className="flex gap-2 mb-6">
+                <div className="flex flex-col sm:flex-row gap-2 mb-6">
                     <button
                         onClick={() => setActiveTab('my-lessons')}
-                        className={`px-6 py-3 rounded-lg font-medium transition ${
+                        className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition text-sm sm:text-base ${
                             activeTab === 'my-lessons'
                                 ? 'bg-blue-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -275,7 +275,7 @@ export default function SubstitutesPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('my-substitutes')}
-                        className={`px-6 py-3 rounded-lg font-medium transition ${
+                        className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition text-sm sm:text-base ${
                             activeTab === 'my-substitutes'
                                 ? 'bg-blue-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -285,7 +285,7 @@ export default function SubstitutesPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('available')}
-                        className={`px-6 py-3 rounded-lg font-medium transition ${
+                        className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition text-sm sm:text-base ${
                             activeTab === 'available'
                                 ? 'bg-blue-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -295,7 +295,7 @@ export default function SubstitutesPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('taken')}
-                        className={`px-6 py-3 rounded-lg font-medium transition ${
+                        className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition text-sm sm:text-base ${
                             activeTab === 'taken'
                                 ? 'bg-blue-500 text-white shadow-md'
                                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -328,7 +328,7 @@ export default function SubstitutesPage() {
                         </div>
 
                         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-                            <div className="flex gap-4 items-end">
+                            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
                                 <div className="flex-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         🔍 Filtruj po numerze grupy
@@ -359,7 +359,7 @@ export default function SubstitutesPage() {
                                             setFilterGroup('');
                                             setFilterTopic('');
                                         }}
-                                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition"
+                                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition w-full sm:w-auto"
                                     >
                                         🗑️ Wyczyść
                                     </button>
@@ -388,20 +388,22 @@ export default function SubstitutesPage() {
                             <div className="space-y-3">
                                 {filteredLessons.map((lesson) => (
                                     <div key={lesson.id_zajec} className="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition">
-                                        <div className="flex justify-between items-start">
+                                        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-2xl">📚</span>
-                                                    <h3 className="text-lg font-bold text-gray-800">
-                                                        {lesson.tematZajec || 'Zajęcia'}
-                                                    </h3>
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-2xl">📚</span>
+                                                        <h3 className="text-lg font-bold text-gray-800">
+                                                            {lesson.tematZajec || 'Zajęcia'}
+                                                        </h3>
+                                                    </div>
                                                     {lesson.grupa && (
-                                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded w-fit">
                                                             Grupa {lesson.grupa.id_grupa}
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="ml-8 space-y-1 text-sm">
+                                                <div className="ml-0 sm:ml-8 space-y-1 text-sm">
                                                     <p className="text-gray-600">
                                                         📅 {new Date(lesson.data).toLocaleDateString('pl-PL', {
                                                             weekday: 'long',
@@ -422,7 +424,7 @@ export default function SubstitutesPage() {
                                                     setSelectedLesson(lesson);
                                                     setShowCreateModal(true);
                                                 }}
-                                                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition"
+                                                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition w-full lg:w-auto lg:self-start"
                                             >
                                                 🔄 Poproś o zastępstwo
                                             </button>

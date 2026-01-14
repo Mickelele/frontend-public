@@ -127,27 +127,27 @@ export default function StudentReportPage() {
                     }
                 }
             `}</style>
-            <div className="min-h-screen bg-gray-50 p-6">
+            <div className="min-h-screen bg-gray-50 p-4 md:p-6">
                 <div className="max-w-6xl mx-auto">
-                    <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-3xl font-bold text-gray-800">📊 Mój raport semestralny</h1>
-                        <div className="flex gap-3 no-print">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 md:mb-6">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">📊 Mój raport semestralny</h1>
+                        <div className="hidden min-[500px]:flex gap-3 no-print">
                             <button
                                 onClick={exportToCSV}
-                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+                                className="bg-green-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm md:text-base"
                             >
                                 📊 Eksportuj CSV
                             </button>
                             <button
                                 onClick={exportToPDF}
-                                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                                className="bg-red-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2 text-sm md:text-base"
                             >
                                 📄 Eksportuj PDF
                             </button>
                         </div>
                     </div>
 
-                {/* Podsumowanie */}
+                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex items-center justify-between">
@@ -189,7 +189,7 @@ export default function StudentReportPage() {
                     </div>
                 </div>
 
-                {/* Obecności */}
+             
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h2 className="text-xl font-semibold mb-4">📅 Obecności</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -212,7 +212,7 @@ export default function StudentReportPage() {
                     </div>
                 </div>
 
-                {/* Zadania domowe */}
+               
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h2 className="text-xl font-semibold mb-4">📝 Zadania domowe</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -234,7 +234,7 @@ export default function StudentReportPage() {
                         </div>
                     </div>
 
-                    {/* Rozkład ocen */}
+                  
                     <div>
                         <h3 className="text-lg font-semibold mb-3">Rozkład ocen</h3>
                         <div className="space-y-2">
@@ -258,7 +258,7 @@ export default function StudentReportPage() {
                     </div>
                 </div>
 
-                {/* Quizy */}
+                
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold mb-4">🎯 Quizy</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
@@ -272,7 +272,7 @@ export default function StudentReportPage() {
                         </div>
                     </div>
 
-                    {/* Rozkład wyników */}
+                   
                     <div>
                         <h3 className="text-lg font-semibold mb-3">Rozkład wyników</h3>
                         <div className="space-y-2">

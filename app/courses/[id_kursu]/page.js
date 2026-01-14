@@ -46,23 +46,23 @@ export default function CourseDetailsPage() {
                 const groupsData = await getCourseGroups(courseId);
                 setGroups(groupsData);
                 
-                // Pobierz lekcje ze wszystkich grup kursu
+               
                 if (groupsData && groupsData.length > 0) {
                     const allLessons = [];
                     
                     for (const group of groupsData) {
-                        // Sprawdź różne możliwe nazwy właściwości ID grupy
+                       
                         const groupId = group.id_grupy || group.id_grupa || group.id || group.groupId;
                         
                         if (!groupId) {
                             console.warn('Brak ID grupy:', group);
-                            continue; // Pomiń tę grupę
+                            continue; 
                         }
                         
                         try {
                             const groupLessons = await getLessonsForGroup(groupId);
                             if (groupLessons && Array.isArray(groupLessons)) {
-                                // Dodaj informacje o grupie do każdej lekcji
+                              
                                 const lessonsWithGroup = groupLessons.map(lesson => ({
                                     ...lesson,
                                     grupa: group
@@ -74,7 +74,7 @@ export default function CourseDetailsPage() {
                         }
                     }
                     
-                    // Sortuj lekcje według daty
+                 
                     allLessons.sort((a, b) => new Date(a.data) - new Date(b.data));
                     setLessons(allLessons);
                 } else {
@@ -95,19 +95,19 @@ export default function CourseDetailsPage() {
 
     const handleEnrollClick = (group) => {
         if (!user) {
-            // Przekieruj do logowania jeśli nie zalogowany
+           
             router.push('/auth/login?redirect=' + encodeURIComponent(window.location.pathname));
             return;
         }
         
-        // Sprawdź czy użytkownik ma rolę opiekuna
+       
         if (user.role !== 'opiekun') {
             alert('Tylko opiekunowie mogą zapisywać uczniów na grupy. Zaloguj się jako opiekun.');
             router.push('/auth/login?redirect=' + encodeURIComponent(window.location.pathname));
             return;
         }
         
-        // Otwórz modal zapisu ucznia na grupę
+        
         setEnrollModal({ visible: true, group });
         setEnrollForm({
             imie: '',
@@ -133,7 +133,7 @@ export default function CourseDetailsPage() {
             return;
         }
 
-        // Sprawdź czy wszystkie pola są wypełnione
+        
         if (!enrollForm.imie || !enrollForm.nazwisko || !enrollForm.email || !enrollForm.pseudonim || !enrollForm.haslo) {
             alert('Proszę wypełnić wszystkie wymagane pola');
             return;
@@ -141,8 +141,7 @@ export default function CourseDetailsPage() {
 
         try {
             setEnrolling(true);
-            // Zapisz nowego ucznia na grupę używając endpoint'u zapiszNaGrupe
-            // Endpoint automatycznie zwiększa liczbę studentów w grupie
+        
             await enrollStudentToGroupWithData({ ...enrollForm, id_grupa: groupId });
             
             alert('Uczeń został utworzony i zapisany na grupę!');
@@ -278,7 +277,7 @@ export default function CourseDetailsPage() {
                     </div>
                 </div>
 
-                {/* Dostępne grupy - widoczne po kliknięciu */}
+             
                 {showGroups && (
                     <div className="mt-8 bg-white rounded-3xl shadow-xl p-8">
                         <h2 className="text-2xl font-bold text-orange-600 mb-6">
@@ -333,14 +332,14 @@ export default function CourseDetailsPage() {
                     </div>
                 )}
 
-                {/* Program kursu - zawsze widoczny */}
+            
                 <div className="mt-8 bg-white rounded-3xl shadow-xl p-8">
                     <h2 className="text-2xl font-bold text-orange-600 mb-6">
                         Program kursu
                     </h2>
                     {lessons.length > 0 ? (
                         <div className="space-y-6">
-                            {/* Lista lekcji */}
+                            
                             <div className="grid gap-4">
                                 {lessons.map((lesson, index) => {
                                     return (
@@ -370,7 +369,7 @@ export default function CourseDetailsPage() {
                     )}
                 </div>
 
-                {/* Modal zapisu ucznia na grupę */}
+                
                 {enrollModal.visible && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">

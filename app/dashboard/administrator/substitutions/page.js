@@ -15,10 +15,10 @@ export default function SubstitutionsPage() {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all'); // all, assigned, unassigned
-    const [sortBy, setSortBy] = useState('date'); // date, course, status
-    const [teacherSearchTerms, setTeacherSearchTerms] = useState({}); // Wyszukiwanie nauczycieli dla każdego zastępstwa
-    const [activeTab, setActiveTab] = useState('current'); // current, archived
+    const [statusFilter, setStatusFilter] = useState('all'); 
+    const [sortBy, setSortBy] = useState('date'); 
+    const [teacherSearchTerms, setTeacherSearchTerms] = useState({}); 
+    const [activeTab, setActiveTab] = useState('current'); 
 
     useEffect(() => {
         loadData();
@@ -95,24 +95,24 @@ export default function SubstitutionsPage() {
         }
     };
 
-    // Data dzisiejsza (potrzebna do filtrowania)
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Filtruj zastępstwa
+
     const filteredSubstitutes = substitutes.filter(sub => {
         const subDate = new Date(sub.zajecia?.data);
         subDate.setHours(0, 0, 0, 0);
         
-        // Filtr zakładki (aktualne vs zarchiwizowane)
+     
         if (activeTab === 'current' && subDate < today) return false;
         if (activeTab === 'archived' && subDate >= today) return false;
         
-        // Filtr statusu
+       
         if (statusFilter === 'assigned' && !sub.id_nauczyciel_zastepujacy) return false;
         if (statusFilter === 'unassigned' && sub.id_nauczyciel_zastepujacy) return false;
 
-        // Wyszukiwanie
+     
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
             const reportingTeacher = teachers.find(t => t.id_nauczyciela === sub.id_nauczyciela_zglaszajacego);
@@ -132,7 +132,7 @@ export default function SubstitutionsPage() {
         return true;
     });
 
-    // Sortowanie
+
     const sortedSubstitutes = [...filteredSubstitutes].sort((a, b) => {
         if (sortBy === 'date') {
             return new Date(b.zajecia?.data || 0) - new Date(a.zajecia?.data || 0);
@@ -150,7 +150,7 @@ export default function SubstitutionsPage() {
         return 0;
     });
 
-    // Statystyki
+  
     const currentSubstitutes = substitutes.filter(s => {
         const subDate = new Date(s.zajecia?.data);
         subDate.setHours(0, 0, 0, 0);
@@ -196,7 +196,7 @@ export default function SubstitutionsPage() {
                 </p>
             </div>
 
-            {/* Zakładki */}
+           
             <div className="flex gap-2 mb-6">
                 <button
                     onClick={() => setActiveTab('current')}
@@ -220,7 +220,7 @@ export default function SubstitutionsPage() {
                 </button>
             </div>
 
-            {/* Statystyki */}
+           
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
                     <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
@@ -242,10 +242,10 @@ export default function SubstitutionsPage() {
                 </div>
             </div>
 
-            {/* Filtry i wyszukiwanie */}
+         
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Wyszukiwanie */}
+                    
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Wyszukaj
@@ -259,7 +259,7 @@ export default function SubstitutionsPage() {
                         />
                     </div>
 
-                    {/* Status */}
+                  
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Status
@@ -275,7 +275,7 @@ export default function SubstitutionsPage() {
                         </select>
                     </div>
 
-                    {/* Sortowanie */}
+                   
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Sortuj według
@@ -293,7 +293,7 @@ export default function SubstitutionsPage() {
                 </div>
             </div>
 
-            {/* Lista zastępstw */}
+          
             {sortedSubstitutes.length === 0 ? (
                 <div className="bg-white rounded-lg shadow-md p-12 text-center">
                     <div className="text-6xl mb-4">📋</div>
@@ -327,7 +327,7 @@ export default function SubstitutionsPage() {
                                 }`}
                             >
                                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-                                    {/* Główne informacje */}
+                                   
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-3">
                                             <h3 className="text-xl font-bold text-gray-800">
@@ -380,11 +380,11 @@ export default function SubstitutionsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Akcje */}
+                                
                                     <div className="flex flex-col gap-2 lg:w-64">
                                         {!isAssigned ? (
                                             <div className="flex flex-col gap-2">
-                                                {/* Wyszukiwanie nauczyciela */}
+                                             
                                                 <input
                                                     type="text"
                                                     placeholder="Szukaj nauczyciela..."
@@ -396,7 +396,7 @@ export default function SubstitutionsPage() {
                                                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                                 
-                                                {/* Lista nauczycieli */}
+                                               
                                                 <select
                                                     id={`teacher-select-${substitute.id_zastepstwa}`}
                                                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 max-h-32 overflow-y-auto"
@@ -406,12 +406,12 @@ export default function SubstitutionsPage() {
                                                     <option value="" disabled>Wybierz nauczyciela</option>
                                                     {teachers
                                                         .filter(teacher => {
-                                                            // Nie pokazuj nauczyciela, który zgłosił zastępstwo
+                                                            
                                                             if (teacher.id_nauczyciela === substitute.id_nauczyciela_zglaszajacego) {
                                                                 return false;
                                                             }
                                                             
-                                                            // Filtr wyszukiwania
+                                                           
                                                             const searchTerm = teacherSearchTerms[substitute.id_zastepstwa]?.toLowerCase() || '';
                                                             if (!searchTerm) return true;
                                                             const fullName = teacher.user ? 

@@ -179,30 +179,30 @@ export default function HistoriaZajec() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-6">
             <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">📚 Historia Zajęć</h1>
-                    <p className="text-gray-600">Przegląd Twoich zajęć i frekwencji</p>
+                <div className="mb-4 md:mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">📚 Historia Zajęć</h1>
+                    <p className="text-sm md:text-base text-gray-600">Przegląd Twoich zajęć i frekwencji</p>
                 </div>
 
                 {pastLessons.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                            <div className="text-sm text-gray-600 mb-1">Wszystkie zajęcia</div>
-                            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+                        <div className="bg-white rounded-lg shadow-md p-3 md:p-4">
+                            <div className="text-xs sm:text-sm text-gray-600 mb-1">Wszystkie zajęcia</div>
+                            <div className="text-xl md:text-2xl font-bold text-blue-600">{stats.total}</div>
                         </div>
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                            <div className="text-sm text-gray-600 mb-1">Obecności</div>
-                            <div className="text-2xl font-bold text-green-600">{stats.present}</div>
+                        <div className="bg-white rounded-lg shadow-md p-3 md:p-4">
+                            <div className="text-xs sm:text-sm text-gray-600 mb-1">Obecności</div>
+                            <div className="text-xl md:text-2xl font-bold text-green-600">{stats.present}</div>
                         </div>
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                            <div className="text-sm text-gray-600 mb-1">Nieobecności</div>
-                            <div className="text-2xl font-bold text-red-600">{stats.absent}</div>
+                        <div className="bg-white rounded-lg shadow-md p-3 md:p-4">
+                            <div className="text-xs sm:text-sm text-gray-600 mb-1">Nieobecności</div>
+                            <div className="text-xl md:text-2xl font-bold text-red-600">{stats.absent}</div>
                         </div>
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                            <div className="text-sm text-gray-600 mb-1">Frekwencja</div>
-                            <div className="text-2xl font-bold text-purple-600">{stats.percentage}%</div>
+                        <div className="bg-white rounded-lg shadow-md p-3 md:p-4">
+                            <div className="text-xs sm:text-sm text-gray-600 mb-1">Frekwencja</div>
+                            <div className="text-xl md:text-2xl font-bold text-purple-600">{stats.percentage}%</div>
                         </div>
                     </div>
                 )}
@@ -375,20 +375,21 @@ export default function HistoriaZajec() {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="mt-8 flex justify-center items-center gap-2">
+                    <div className="mt-6 md:mt-8 flex flex-col sm:flex-row justify-center items-center gap-3 md:gap-2">
                         <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className={`px-4 py-2 rounded-lg font-medium transition ${
+                            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition text-sm md:text-base ${
                                 currentPage === 1
                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                     : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 shadow-md'
                             }`}
                         >
-                            ← Poprzednia
+                            <span className="hidden sm:inline">← Poprzednia</span>
+                            <span className="sm:hidden">← Poprz.</span>
                         </button>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-1 md:gap-2 flex-wrap justify-center">
                             {[...Array(totalPages)].map((_, index) => {
                                 const pageNum = index + 1;
                                 if (
@@ -400,7 +401,7 @@ export default function HistoriaZajec() {
                                         <button
                                             key={pageNum}
                                             onClick={() => handlePageChange(pageNum)}
-                                            className={`px-4 py-2 rounded-lg font-medium transition ${
+                                            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition text-sm md:text-base ${
                                                 currentPage === pageNum
                                                     ? 'bg-blue-600 text-white shadow-md'
                                                     : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 shadow-md'
@@ -413,7 +414,7 @@ export default function HistoriaZajec() {
                                     pageNum === currentPage - 2 ||
                                     pageNum === currentPage + 2
                                 ) {
-                                    return <span key={pageNum} className="px-2 text-gray-400">...</span>;
+                                    return <span key={pageNum} className="px-1 md:px-2 text-gray-400 text-sm md:text-base">...</span>;
                                 }
                                 return null;
                             })}
@@ -422,13 +423,14 @@ export default function HistoriaZajec() {
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
-                            className={`px-4 py-2 rounded-lg font-medium transition ${
+                            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition text-sm md:text-base ${
                                 currentPage === totalPages
                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                     : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 shadow-md'
                             }`}
                         >
-                            Następna →
+                            <span className="hidden sm:inline">Następna →</span>
+                            <span className="sm:hidden">Nast. →</span>
                         </button>
                     </div>
                 )}

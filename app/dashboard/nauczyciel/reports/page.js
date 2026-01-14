@@ -18,7 +18,7 @@ export default function SemesterReportsPage() {
     const [generating, setGenerating] = useState(false);
     const [groupSearch, setGroupSearch] = useState('');
     const [studentSearch, setStudentSearch] = useState('');
-    const [reportType, setReportType] = useState('students'); // 'students' lub 'group'
+    const [reportType, setReportType] = useState('students');
     const [groupReport, setGroupReport] = useState(null);
     const [selectedStudentReport, setSelectedStudentReport] = useState(null);
 
@@ -53,7 +53,7 @@ export default function SemesterReportsPage() {
         try {
             const details = await getGroupById(groupId);
             
-            // Pobierz nazwę kursu
+           
             if (details.Kurs_id_kursu) {
                 try {
                     const course = await getCourseById(details.Kurs_id_kursu);
@@ -205,15 +205,14 @@ export default function SemesterReportsPage() {
 
         setGenerating(true);
         try {
-            // Pobierz szczegółowy raport dla całej grupy
+           
             const groupReport = await getDetailedReport({ groupId: selectedGroup });
 
-            // Pobierz dane dla każdego ucznia osobno
             const reportsPromises = students.map(async (student) => {
                 try {
                     const studentReport = await getDetailedReport({ studentId: student.id_ucznia });
 
-                    // Przekształć dane z nowego API
+                    
                     const presenceData = {
                         total: studentReport.attendance?.totalLessons || 0,
                         present: studentReport.attendance?.present || 0,
@@ -226,7 +225,7 @@ export default function SemesterReportsPage() {
                         average: Math.round(studentReport.homework?.averageGrade || 0)
                     };
 
-                    // Oblicz poziom zaangażowania (na podstawie obecności i oddanych prac)
+                    
                     const engagement = presenceData.total > 0 || gradesData.total > 0
                         ? Math.round((presenceData.rate * 0.6 + (gradesData.total > 0 ? (gradesData.graded / gradesData.total * 100) : 0) * 0.4))
                         : 0;
@@ -241,7 +240,7 @@ export default function SemesterReportsPage() {
                     };
                 } catch (err) {
                     console.error(`Błąd pobierania raportu dla ucznia ${student.id_ucznia}:`, err);
-                    // Zwróć pusty raport w przypadku błędu
+                    
                     return {
                         student,
                         presence: { total: 0, present: 0, rate: 0 },
@@ -405,12 +404,12 @@ export default function SemesterReportsPage() {
                     </div>
                 )}
 
-                {/* Raport grupy */}
+                
                 {groupReport && reportType === 'group' && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-semibold">📊 Raport grupy #{selectedGroup}</h2>
-                            <div className="flex gap-3 no-print">
+                            <div className="flex gap-3 no-print hidden">
                                 <button
                                     onClick={exportGroupToCSV}
                                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
@@ -426,7 +425,7 @@ export default function SemesterReportsPage() {
                             </div>
                         </div>
                         
-                        {/* Podsumowanie */}
+                       
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                             <div className="bg-blue-50 p-6 rounded-lg">
                                 <div className="flex items-center justify-between">
@@ -468,7 +467,7 @@ export default function SemesterReportsPage() {
                             </div>
                         </div>
 
-                        {/* Obecności grupy */}
+                      
                         <div className="mb-6">
                             <h3 className="text-lg font-semibold mb-3">📅 Obecności</h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -491,7 +490,7 @@ export default function SemesterReportsPage() {
                             </div>
                         </div>
 
-                        {/* Zadania domowe grupy */}
+                     
                         <div className="mb-6">
                             <h3 className="text-lg font-semibold mb-3">📝 Zadania domowe</h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -514,7 +513,7 @@ export default function SemesterReportsPage() {
                             </div>
                         </div>
 
-                        {/* Quizy grupy */}
+                      
                         <div>
                             <h3 className="text-lg font-semibold mb-3">🎯 Quizy</h3>
                             <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
@@ -531,7 +530,7 @@ export default function SemesterReportsPage() {
                     </div>
                 )}
 
-                {/* Lista uczniów z możliwością generowania raportów */}
+               
                 {reportType === 'students' && students.length > 0 && !selectedStudentReport && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex justify-between items-center mb-4">
@@ -595,7 +594,7 @@ export default function SemesterReportsPage() {
                     </div>
                 )}
 
-                {/* Raport pojedynczego ucznia */}
+               
                 {selectedStudentReport && reportType === 'students' && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex justify-between items-center mb-6">
@@ -603,13 +602,13 @@ export default function SemesterReportsPage() {
                             <div className="flex gap-3 no-print">
                                 <button
                                     onClick={exportStudentToCSV}
-                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 hidden"
                                 >
                                     📊 Eksportuj CSV
                                 </button>
                                 <button
                                     onClick={exportStudentToPDF}
-                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2 hidden"
                                 >
                                     📄 Eksportuj PDF
                                 </button>
@@ -632,7 +631,7 @@ export default function SemesterReportsPage() {
                                         {student?.pseudonim && <p className="text-sm text-gray-600">({student.pseudonim})</p>}
                                     </div>
 
-                                    {/* Podsumowanie ucznia */}
+                                  
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                         <div className="bg-blue-50 p-6 rounded-lg">
                                             <div className="flex items-center justify-between">
@@ -674,7 +673,7 @@ export default function SemesterReportsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Szczegóły obecności */}
+                                  
                                     <div className="mb-6">
                                         <h3 className="text-lg font-semibold mb-3">📅 Obecności</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -697,7 +696,7 @@ export default function SemesterReportsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Szczegóły zadań */}
+                                    
                                     <div className="mb-6">
                                         <h3 className="text-lg font-semibold mb-3">📝 Zadania domowe</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -720,7 +719,7 @@ export default function SemesterReportsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Szczegóły quizów */}
+                                    
                                     <div>
                                         <h3 className="text-lg font-semibold mb-3">🎯 Quizy</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-2 gap-4">

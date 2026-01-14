@@ -11,7 +11,7 @@ export default function RankingsPage() {
     const [groups, setGroups] = useState([]);
     const [studentsWithStats, setStudentsWithStats] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [criterion, setCriterion] = useState('points'); // points, grades, attendance
+    const [criterion, setCriterion] = useState('points'); 
     const [topCount, setTopCount] = useState(10);
 
     useEffect(() => {
@@ -29,34 +29,34 @@ export default function RankingsPage() {
             setStudents(studentsData || []);
             setGroups(groupsData || []);
 
-            // Oblicz statystyki dla każdego ucznia
+      
             const studentsWithCalculatedStats = await Promise.all(
                 (studentsData || []).map(async (student) => {
                     try {
-                        // Pobierz obecności ucznia
+                      
                         const presences = await getPresenceForStudent(student.id_ucznia);
                         
-                        // Oblicz frekwencję
+                     
                         let attendanceRate = 0;
                         if (presences && presences.length > 0) {
                             const presentCount = presences.filter(p => p.czyObecny === 1 || p.czyObecny === true).length;
                             attendanceRate = (presentCount / presences.length) * 100;
                         }
 
-                        // Pobierz wszystkie odpowiedzi ucznia na zadania domowe
+                        
                         let averageGrade = 0;
                         if (student.id_grupa) {
                             try {
-                                // Pobierz wszystkie zadania domowe dla grupy
+                               
                                 let homeworks = await getGroupHomeworks(student.id_grupa);
                                 console.log(`=== Dane dla ucznia ${student.id_ucznia} (${student.imie} ${student.nazwisko}) ===`);
                                 console.log('Grupa ID:', student.id_grupa);
                                 console.log('RAW Odpowiedź z backendu:', homeworks);
                                 console.log('Type:', typeof homeworks, 'Is Array:', Array.isArray(homeworks));
                                 
-                                // Upewnij się że homeworks jest tablicą
+                             
                                 if (!Array.isArray(homeworks)) {
-                                    // Jeśli to pusty obiekt (brak zadań) lub obiekt bez id_zadania - pomiń
+                                   
                                     if (!homeworks || !homeworks.id_zadania) {
                                         homeworks = [];
                                     } else {
@@ -66,16 +66,16 @@ export default function RankingsPage() {
                                 
                                 console.log('Zadania jako tablica:', homeworks);
                                 
-                                // Zbierz wszystkie odpowiedzi ucznia z wszystkich zadań
+                              
                                 const allStudentAnswers = [];
                                 
                                 for (const homework of homeworks) {
                                     try {
-                                        // Dla każdego zadania pobierz wszystkie odpowiedzi
+                                       
                                         const answers = await getHomeworkAnswers(homework.id_zadania);
                                         console.log(`Zadanie "${homework.tytul}" (ID: ${homework.id_zadania}):`, answers);
                                         
-                                        // Filtruj odpowiedzi danego ucznia
+                                   
                                         const studentAnswersForTask = answers?.filter(
                                             answer => answer.id_ucznia === student.id_ucznia
                                         ) || [];
@@ -89,7 +89,7 @@ export default function RankingsPage() {
                                 
                                 console.log('Wszystkie odpowiedzi ucznia:', allStudentAnswers);
                                 
-                                // Filtruj tylko odpowiedzi z oceną (pomiń te gdzie ocena === null)
+                               
                                 const gradedAnswers = allStudentAnswers.filter(
                                     answer => answer.ocena !== null && answer.ocena !== undefined
                                 );
@@ -133,11 +133,11 @@ export default function RankingsPage() {
         }
     };
 
-    // Obliczanie rankingu
+   
     const calculateRanking = () => {
         let rankedStudents = [...studentsWithStats];
 
-        // Sortowanie według wybranego kryterium
+        
         if (criterion === 'points') {
             rankedStudents.sort((a, b) => (b.saldo_punktow || 0) - (a.saldo_punktow || 0));
         } else if (criterion === 'grades') {
@@ -146,7 +146,7 @@ export default function RankingsPage() {
             rankedStudents.sort((a, b) => (b.attendance_rate || 0) - (a.attendance_rate || 0));
         }
 
-        // Ograniczenie do top N
+     
         return rankedStudents.slice(0, topCount);
     };
 
@@ -201,10 +201,10 @@ export default function RankingsPage() {
                 </p>
             </div>
 
-            {/* Filtry */}
+        
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Kryterium */}
+                  
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Kryterium rankingu
@@ -220,7 +220,7 @@ export default function RankingsPage() {
                         </select>
                     </div>
 
-                    {/* Liczba wyników */}
+                   
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Wyświetl top
@@ -240,7 +240,7 @@ export default function RankingsPage() {
                 </div>
             </div>
 
-            {/* Ranking */}
+     
             {rankedStudents.length === 0 ? (
                 <div className="bg-white rounded-lg shadow-md p-12 text-center">
                     <div className="text-6xl mb-4">🏆</div>
@@ -348,7 +348,7 @@ export default function RankingsPage() {
                 </div>
             )}
 
-            {/* Legenda */}
+      
             <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-sm text-blue-800">
                     <span className="font-semibold">💡 Informacja:</span>

@@ -420,7 +420,9 @@ export default function GuardianLessons() {
                             </div>
                         </div>
 
-                        {renderCalendar()}
+                        <div className="hidden min-[500px]:block">
+                            {renderCalendar()}
+                        </div>
 
                         <div className="bg-white rounded-lg shadow-md mb-6">
                             <div className="border-b border-gray-200">
@@ -496,7 +498,7 @@ export default function GuardianLessons() {
                                                             : 'bg-white border-2 border-gray-200'
                                                     }`}
                                                 >
-                                                    {/* Colored accent bar on the left */}
+                                                   
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
                                                         lesson.presence === 1 
                                                             ? 'bg-gradient-to-b from-green-400 to-green-600' 
@@ -506,11 +508,11 @@ export default function GuardianLessons() {
                                                     }`}></div>
 
                                                     <div className="p-5 pl-6">
-                                                        {/* Header row */}
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="text-center">
-                                                                    <div className="text-3xl font-bold text-gray-800">
+                                                      
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                                                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 min-w-0">
+                                                                <div className="flex-shrink-0">
+                                                                    <div className="text-2xl sm:text-3xl font-bold text-gray-800">
                                                                         {formatTime(lesson.grupa?.godzina)}
                                                                     </div>
                                                                     <div className="text-xs text-gray-500 mt-1">
@@ -521,13 +523,13 @@ export default function GuardianLessons() {
                                                                         })}
                                                                     </div>
                                                                 </div>
-                                                                <div className="h-12 w-px bg-gray-300"></div>
-                                                                <div className="flex-1">
-                                                                    <h3 className="text-lg font-bold text-gray-800 leading-tight">
+                                                                <div className="hidden sm:block h-12 w-px bg-gray-300"></div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="text-sm font-bold text-gray-800 break-words">
                                                                         {lesson.tematZajec || 'Brak tematu'}
-                                                                    </h3>
+                                                                    </div>
                                                                     {lesson.grupa?.nazwa_grupy && (
-                                                                        <p className="text-sm text-gray-500 mt-1">
+                                                                        <p className="text-xs text-gray-500 mt-1 break-words">
                                                                             {lesson.grupa.nazwa_grupy}
                                                                         </p>
                                                                     )}
@@ -535,7 +537,7 @@ export default function GuardianLessons() {
                                                             </div>
                                                             
                                                             {activeTab === 'past' && lesson.presence !== null && (
-                                                                <div className={`px-4 py-2 rounded-full font-semibold text-sm ${
+                                                                <div className={`px-3 py-2 rounded-full font-semibold text-xs sm:text-sm flex-shrink-0 text-center ${
                                                                     lesson.presence === 1 
                                                                         ? 'bg-green-100 text-green-700 border border-green-300' 
                                                                         : 'bg-red-100 text-red-700 border border-red-300'
@@ -545,7 +547,7 @@ export default function GuardianLessons() {
                                                             )}
                                                         </div>
 
-                                                        {/* Details grid */}
+                                                    
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                             {lesson.postepy && (
                                                                 <div className="p-3 bg-white rounded-lg border border-blue-200 shadow-sm">
@@ -588,7 +590,7 @@ export default function GuardianLessons() {
                                                             )}
                                                         </div>
 
-                                                        {/* Footer */}
+                                                       
                                                         {lesson.nauczyciel && (
                                                             <div className="mt-4 pt-3 border-t border-gray-200 flex items-center gap-2 text-sm text-gray-600">
                                                                 <span className="text-lg">👨‍🏫</span>

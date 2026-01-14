@@ -6,7 +6,7 @@ export default function AdministratorDashboard() {
     const router = useRouter();
 
     useEffect(() => {
-        // Przekieruj od razu do zarządzania użytkownikami
+       
         router.replace('/dashboard/administrator/users');
     }, [router]);
 

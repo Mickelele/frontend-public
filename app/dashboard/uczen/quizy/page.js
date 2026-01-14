@@ -63,23 +63,22 @@ export default function StudentQuizzesPage() {
                 getLessonsForGroup(groupId)
             ]);
             
-            // Filtruj quizy - pokaż tylko te, które są przypisane do zajęć które były dzisiaj lub wcześniej
+          
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Ustaw na początek dnia
+            today.setHours(0, 0, 0, 0); 
             
             const filteredQuizzes = (quizzesData || []).filter(quiz => {
-                // Jeśli quiz nie ma przypisanych zajęć, nie pokazuj go
+             
                 if (!quiz.Zajecia_id_zajec) {
                     return false;
                 }
                 
-                // Znajdź zajęcia dla tego quizu
+            
                 const lesson = lessonsData.find(l => l.id_zajec === quiz.Zajecia_id_zajec);
                 if (!lesson || !lesson.data) {
                     return false;
                 }
-                
-                // Sprawdź czy data zajęć jest dzisiaj lub w przeszłości
+               
                 const lessonDate = new Date(lesson.data);
                 lessonDate.setHours(0, 0, 0, 0);
                 

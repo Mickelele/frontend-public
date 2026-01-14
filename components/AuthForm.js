@@ -49,7 +49,7 @@ export default function AuthForm({ fields, onSubmit, submitLabel, footer, error:
                 <svg className="w-6 h-6 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span className="font-semibold text-lg">Powrót na stronę główną</span>
+                <span className="font-semibold text-lg hidden min-[500px]:inline">Powrót na stronę główną</span>
             </Link>
             
             <div className="max-w-md w-full space-y-8 animate-fade-in">

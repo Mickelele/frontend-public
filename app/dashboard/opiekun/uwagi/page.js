@@ -67,7 +67,7 @@ export default function GuardianRemarks() {
             setLoading(true);
             const remarksData = await getStudentRemarks(student.id_ucznia);
             
-            // Fetch teacher details for each remark
+           
             const remarksWithTeachers = await Promise.all(
                 (remarksData || []).map(async (remark) => {
                     if (remark.id_nauczyciela) {
@@ -86,7 +86,7 @@ export default function GuardianRemarks() {
             setRemarks(remarksWithTeachers);
             setLoading(false);
         } catch (err) {
-            // If endpoint doesn't exist (404), show empty state without logging error
+            
             if (err.status !== 404) {
                 console.error('Błąd podczas pobierania uwag:', err);
             }

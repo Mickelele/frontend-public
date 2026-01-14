@@ -26,7 +26,7 @@ export default function GroupEnrollForm() {
         try {
             await enrollStudentToGroup({ ...form, id_grupa });
             
-            // Zwiększ liczbę studentów w grupie
+            
             await adjustStudentCount(id_grupa, 1);
             
             alert('Uczeń został zapisany!');

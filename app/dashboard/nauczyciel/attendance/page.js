@@ -23,7 +23,7 @@ export default function TeacherCoursesPage() {
     const [mySubstitutesTaken, setMySubstitutesTaken] = useState([]);
     const [substituteLessons, setSubstituteLessons] = useState([]);
     const [substitutesExpanded, setSubstitutesExpanded] = useState(true);
-    const [unsavedPresences, setUnsavedPresences] = useState({}); // {zajecieId_studentId: {value, original}}
+    const [unsavedPresences, setUnsavedPresences] = useState({}); 
     const [saving, setSaving] = useState(false);
     const [presenceMenu, setPresenceMenu] = useState({
         visible: false,
@@ -254,7 +254,7 @@ export default function TeacherCoursesPage() {
                 })
             );
             
-            // Dodaj zajęcia z zastępstw do odpowiednich kursów i grup
+           
             const coursesWithSubstitutes = await addSubstituteLessonsToCourses(coursesWithUsers);
             
             setCourses(coursesWithSubstitutes);
@@ -369,7 +369,11 @@ export default function TeacherCoursesPage() {
                     const grupaId = lesson.id_grupy;
                     
                     try {
-                        const students = await getGroupStudents(grupaId);
+                       
+                        const [students, groupData] = await Promise.all([
+                            getGroupStudents(grupaId),
+                            getGroupById(grupaId)
+                        ]);
                         
                    
                         const studentsWithUsers = await Promise.all(
@@ -407,6 +411,7 @@ export default function TeacherCoursesPage() {
                         
                         return {
                             ...lesson,
+                            godzina: groupData?.godzina || lesson.godzina,
                             uczniowie: studentsWithUsers,
                             obecnosci: lessonPresences,
                             id_zastepstwa: sub.id_zastepstwa
@@ -449,13 +454,13 @@ export default function TeacherCoursesPage() {
     const getNazwaZajec = z => z.tematZajec || "Brak tematu";
 
     const getStudentPresence = (zajecie, studentId) => {
-        // Sprawdź czy jest niezapisana zmiana
+      
         const changeKey = `${zajecie.id_zajec}_${studentId}`;
         if (unsavedPresences[changeKey]) {
             return unsavedPresences[changeKey].value;
         }
         
-        // W przeciwnym razie użyj oryginalnych danych
+      
         const o = zajecie.obecnosci?.find(x => x.id_ucznia === studentId);
         if (!o) return null;
         return o.czyObecny == 1;
@@ -539,13 +544,13 @@ export default function TeacherCoursesPage() {
 
             const result = await addComment(remarkData);
 
-            // Po pomyślnym dodaniu uwagi - penalizuj ucznia punktami (-5 punktów)
+           
             try {
                 await penalizeForRemark(remarkModal.selectedStudent.id_ucznia);
                 console.log(`Odebrano 5 punktów uczniowi ${remarkModal.selectedStudent.id_ucznia} za uwagę`);
             } catch (pointsError) {
                 console.error("Błąd przy karze punktowej za uwagę:", pointsError);
-                // Nie przerywamy - uwaga została dodana
+             
             }
 
             closeRemarkModal();
@@ -649,7 +654,7 @@ export default function TeacherCoursesPage() {
                 return;
             }
 
-            // Znajdź oryginalną obecność
+           
             const zajecie = [
                 ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
                 ...substituteLessons
@@ -661,7 +666,7 @@ export default function TeacherCoursesPage() {
                 originalPresence = existingPresence ? (existingPresence.czyObecny === 1) : null;
             }
 
-            // Zapisz zmianę lokalnie
+           
             const changeKey = `${idZajec}_${idStudenta}`;
             setUnsavedPresences(prev => ({
                 ...prev,
@@ -674,7 +679,7 @@ export default function TeacherCoursesPage() {
                 }
             }));
 
-            // Aktualizuj widok lokalnie
+           
             updatePresenceOptimistically(idZajec, idStudenta, value);
 
             setPresenceMenu({
@@ -719,15 +724,15 @@ export default function TeacherCoursesPage() {
                         await deletePresence(idObecnosci);
                     }
 
-                    // Przygotuj zmiany punktów
+                   
                     if (value === true && (original === false || original === null)) {
-                        // Uczeń otrzymuje obecność -> +1 punkt
+                        
                         pointsChanges.push({ studentId: idStudenta, action: 'add' });
                     } else if (value === false && original === true) {
-                        // Uczeń traci obecność (obecny -> nieobecny) -> -1 punkt
+                     
                         pointsChanges.push({ studentId: idStudenta, action: 'remove' });
                     } else if (value === null && original === true) {
-                        // Uczeń traci obecność (obecny -> brak danych) -> -1 punkt
+                        
                         pointsChanges.push({ studentId: idStudenta, action: 'remove' });
                     }
 
@@ -737,7 +742,7 @@ export default function TeacherCoursesPage() {
                 }
             }
 
-            // Zapisz punkty po pomyślnym zapisie obecności
+        
             for (const pointChange of pointsChanges) {
                 try {
                     if (pointChange.action === 'add') {
@@ -757,7 +762,7 @@ export default function TeacherCoursesPage() {
                 alert(`⚠️ Zapisano z błędami. ${errors.length} zmian nie udało się zapisać.`);
             }
 
-            // Odśwież dane
+       
             await loadCourses(selectedDay);
             await loadSubstitutes();
 
@@ -775,24 +780,34 @@ export default function TeacherCoursesPage() {
         if (!confirm("Czy anulować wszystkie niezapisane zmiany?")) return;
 
         setUnsavedPresences({});
-        // Przywróć oryginalny stan
+       
         loadCourses(selectedDay);
         loadSubstitutes();
     };
 
     const saveGroupPresences = async (groupId) => {
         const groupChanges = Object.entries(unsavedPresences).filter(([key, change]) => {
-            // Znajdź zajęcia z tej grupy
+           
             const zajecie = [
                 ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
                 ...substituteLessons
             ].find(z => z.id_zajec === change.idZajec);
             
-            return zajecie && courses.some(c => 
+            if (!zajecie) return false;
+            
+          
+            const isInRegularGroup = courses.some(c => 
                 c.grupy.some(g => g.id_grupa === groupId && 
                     g.zajecia.some(z => z.id_zajec === change.idZajec)
                 )
             );
+            
+           
+            const isInSubstituteGroup = substituteLessons.some(sub => 
+                sub.id_zajec === change.idZajec && sub.id_grupy === groupId
+            );
+            
+            return isInRegularGroup || isInSubstituteGroup;
         });
 
         if (groupChanges.length === 0) {
@@ -821,20 +836,18 @@ export default function TeacherCoursesPage() {
                         await deletePresence(idObecnosci);
                     }
 
-                    // Przygotuj zmiany punktów
+                   
                     if (value === true && (original === false || original === null)) {
-                        // Obecny (gdy wcześniej był nieobecny lub nie było obecności) - dodaj punkt
+                       
                         pointsChanges.push({ studentId: idStudenta, action: 'add' });
                     } else if (value === false && original === true) {
-                        // Nieobecny (gdy wcześniej był obecny) - odbierz punkt  
+                   
                         pointsChanges.push({ studentId: idStudenta, action: 'remove' });
                     } else if (value === null && original === true) {
-                        // Nie określone (gdy wcześniej był obecny) - odbierz punkt
+                       
                         pointsChanges.push({ studentId: idStudenta, action: 'remove' });
                     }
-                    // Brak zmian punktów w pozostałych przypadkach:
-                    // - value === false && (original === false || original === null) - nieobecny pozostaje nieobecny
-                    // - value === null && (original === false || original === null) - nie określone pozostaje bez zmian
+                    
 
                 } catch (error) {
                     console.error(`Błąd zapisywania obecności ${changeKey}:`, error);
@@ -842,7 +855,7 @@ export default function TeacherCoursesPage() {
                 }
             }
 
-            // Zapisz punkty
+           
             for (const pointChange of pointsChanges) {
                 try {
                     if (pointChange.action === 'add') {
@@ -856,7 +869,7 @@ export default function TeacherCoursesPage() {
             }
 
             if (errors.length === 0) {
-                // Usuń zapisane zmiany z unsavedPresences
+            
                 const newUnsavedPresences = { ...unsavedPresences };
                 groupChanges.forEach(([key]) => {
                     delete newUnsavedPresences[key];
@@ -868,7 +881,7 @@ export default function TeacherCoursesPage() {
                 alert(`⚠️ Zapisano z błędami. ${errors.length} zmian nie udało się zapisać.`);
             }
 
-            // Odśwież dane
+          
             await loadCourses(selectedDay);
             await loadSubstitutes();
 
@@ -882,48 +895,68 @@ export default function TeacherCoursesPage() {
 
     const cancelGroupChanges = (groupId) => {
         const groupChanges = Object.entries(unsavedPresences).filter(([key, change]) => {
-            // Znajdź zajęcia z tej grupy
+        
             const zajecie = [
                 ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
                 ...substituteLessons
             ].find(z => z.id_zajec === change.idZajec);
             
-            return zajecie && courses.some(c => 
+            if (!zajecie) return false;
+            
+       
+            const isInRegularGroup = courses.some(c => 
                 c.grupy.some(g => g.id_grupa === groupId && 
                     g.zajecia.some(z => z.id_zajec === change.idZajec)
                 )
             );
+            
+            
+            const isInSubstituteGroup = substituteLessons.some(sub => 
+                sub.id_zajec === change.idZajec && sub.id_grupy === groupId
+            );
+            
+            return isInRegularGroup || isInSubstituteGroup;
         });
 
         if (groupChanges.length === 0) return;
 
         if (!confirm(`Czy anulować ${groupChanges.length} niezapisanych zmian dla tej grupy?`)) return;
 
-        // Usuń zmiany z unsavedPresences
+       
         const newUnsavedPresences = { ...unsavedPresences };
         groupChanges.forEach(([key]) => {
             delete newUnsavedPresences[key];
         });
         setUnsavedPresences(newUnsavedPresences);
         
-        // Przywróć oryginalny stan dla tej grupy
+      
         loadCourses(selectedDay);
         loadSubstitutes();
     };
 
     const getGroupUnsavedCount = (groupId) => {
         return Object.entries(unsavedPresences).filter(([key, change]) => {
-            // Znajdź zajęcia z tej grupy
+          
             const zajecie = [
                 ...courses.flatMap(c => c.grupy?.flatMap(g => g.zajecia) || []),
                 ...substituteLessons
             ].find(z => z.id_zajec === change.idZajec);
             
-            return zajecie && courses.some(c => 
+            if (!zajecie) return false;
+            
+           
+            const isInRegularGroup = courses.some(c => 
                 c.grupy.some(g => g.id_grupa === groupId && 
                     g.zajecia.some(z => z.id_zajec === change.idZajec)
                 )
             );
+            
+       
+            const isInSubstituteGroup = substituteLessons.some(sub => 
+                sub.id_zajec === change.idZajec && sub.id_grupy === groupId
+            );
+            
+            return isInRegularGroup || isInSubstituteGroup;
         }).length;
     };
 
@@ -1072,9 +1105,9 @@ export default function TeacherCoursesPage() {
                     </div>
                 )}
 
-                {/* Sekcja zajęć z zastępstw */}
+                
                 {substituteLessons.length > 0 && (() => {
-                    // Filtruj zajęcia: max 2 dni wstecz od dzisiaj
+                    
                     const twoDaysAgo = new Date();
                     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
                     twoDaysAgo.setHours(0, 0, 0, 0);
@@ -1092,8 +1125,8 @@ export default function TeacherCoursesPage() {
                                 className="bg-green-100 px-6 py-4 border-b border-green-200 cursor-pointer hover:bg-green-150 transition-colors"
                                 onClick={() => setSubstitutesExpanded(!substitutesExpanded)}
                             >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-col min-[500px]:flex-row min-[500px]:items-center min-[500px]:justify-between">
+                                    <div className="flex items-center gap-2 mb-2 min-[500px]:mb-0">
                                         <span className="text-2xl">✅</span>
                                         <h2 className="text-xl font-bold text-gray-800">
                                             Twoje zastępstwa
@@ -1102,7 +1135,7 @@ export default function TeacherCoursesPage() {
                                             {filteredLessons.length} {filteredLessons.length === 1 ? 'zajęcia' : 'zajęć'}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 min-[500px]:gap-4">
                                         <span className="text-gray-600 text-sm">
                                             Zajęcia, które prowadzisz jako zastępstwo
                                         </span>
@@ -1122,8 +1155,8 @@ export default function TeacherCoursesPage() {
                                 <div className="p-6 space-y-6">
                                     {filteredLessons.map(lesson => (
                                 <div key={lesson.id_zajec} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-                                    <div className="mb-4 flex justify-between items-start">
-                                        <div>
+                                    <div className="mb-4 flex flex-col min-[500px]:flex-row min-[500px]:justify-between min-[500px]:items-start">
+                                        <div className="mb-2 min-[500px]:mb-0">
                                             <h3 className="text-lg font-bold text-gray-800">
                                                 {lesson.tematZajec || 'Zajęcia'}
                                             </h3>
@@ -1131,7 +1164,7 @@ export default function TeacherCoursesPage() {
                                                 Data: {formatDate(lesson.data)} | Godzina: {formatTime(lesson.godzina)} | Grupa {lesson.id_grupy}
                                             </p>
                                         </div>
-                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium w-fit">
                                             ZASTĘPSTWO
                                         </span>
                                     </div>
@@ -1141,8 +1174,14 @@ export default function TeacherCoursesPage() {
                                             <table className="w-full">
                                                 <thead>
                                                     <tr className="border-b border-gray-200">
-                                                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Uczeń</th>
-                                                        <th className="text-center py-3 px-4 font-semibold text-gray-700">Obecność</th>
+                                                        <th className="text-left py-2 px-1 min-[500px]:py-3 min-[500px]:px-4 font-semibold text-gray-700 text-xs min-[500px]:text-base w-auto max-[499px]:w-fit">
+                                                            <span className="min-[500px]:hidden">U</span>
+                                                            <span className="hidden min-[500px]:inline">Uczeń</span>
+                                                        </th>
+                                                        <th className="text-center py-2 px-2 min-[500px]:py-3 min-[500px]:px-4 font-semibold text-gray-700 text-xs min-[500px]:text-base">
+                                                            <span className="min-[500px]:hidden">Ob</span>
+                                                            <span className="hidden min-[500px]:inline">Obecność</span>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -1152,27 +1191,33 @@ export default function TeacherCoursesPage() {
                                                         
                                                         return (
                                                             <tr key={student.id_ucznia} className={idx % 2 ? "bg-gray-50" : "bg-white"}>
-                                                                <td className="py-3 px-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                                <td className="py-2 px-1 min-[500px]:py-3 min-[500px]:px-4 w-auto max-[499px]:w-fit">
+                                                                    <div className="flex items-center gap-1 min-[500px]:gap-2 w-fit max-[499px]:max-w-[70px]">
+                                                                        <div className="w-8 h-8 bg-blue-100 rounded-full items-center justify-center hidden min-[500px]:flex">
                                                                             <span className="text-blue-600 text-sm font-medium">
                                                                                 {student.uzytkownik?.imie?.charAt(0).toUpperCase() || '?'}
                                                                             </span>
                                                                         </div>
-                                                                        <div>
-                                                                            <div className="font-medium text-gray-900">
-                                                                                {getStudentFullName(student)}
+                                                                        <div className="min-w-0 flex-1 overflow-hidden">
+                                                                            <div className="font-medium text-gray-900 text-xs min-[500px]:text-base truncate whitespace-nowrap">
+                                                                                <span className="min-[500px]:hidden">
+                                                                                    {student.uzytkownik?.nazwisko?.substring(0, 6) || 'Brak'}
+                                                                                </span>
+                                                                                <span className="hidden min-[500px]:inline">
+                                                                                    {getStudentFullName(student)}
+                                                                                </span>
                                                                             </div>
-                                                                            <div className="text-xs text-gray-500">
-                                                                                Punkty: {student.saldo_punktow}
+                                                                            <div className="text-xs text-gray-500 hidden min-[400px]:block whitespace-nowrap">
+                                                                                <span className="min-[500px]:hidden">P: {student.saldo_punktow}</span>
+                                                                                <span className="hidden min-[500px]:inline">Punkty: {student.saldo_punktow}</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 </td>
-                                                                <td className="py-3 px-4 text-center">
+                                                                <td className="py-2 px-2 min-[500px]:py-3 min-[500px]:px-4 text-center">
                                                                     <div
                                                                         onClick={(e) => openPresenceMenu(e, obecnosc, lesson.id_zajec, student.id_ucznia)}
-                                                                        className={`w-10 h-10 rounded border-2 flex items-center justify-center mx-auto cursor-pointer transition-all hover:scale-110 ${
+                                                                        className={`w-8 h-8 min-[500px]:w-10 min-[500px]:h-10 rounded border-2 flex items-center justify-center mx-auto cursor-pointer transition-all hover:scale-110 ${
                                                                             status === null
                                                                                 ? "border-gray-300 bg-gray-100 hover:bg-gray-200"
                                                                                 : status
@@ -1181,7 +1226,7 @@ export default function TeacherCoursesPage() {
                                                                         }`}
                                                                         title={`Kliknij aby zmienić obecność dla ${getStudentFullName(student)}`}
                                                                     >
-                                                                        <span className={`font-bold text-lg ${getPresenceTextColor(status)}`}>
+                                                                        <span className={`font-bold text-sm min-[500px]:text-lg ${getPresenceTextColor(status)}`}>
                                                                             {getPresenceText(status)}
                                                                         </span>
                                                                     </div>
@@ -1194,6 +1239,45 @@ export default function TeacherCoursesPage() {
                                         </div>
                                     ) : (
                                         <p className="text-gray-500 text-center py-4">Brak uczniów w grupie</p>
+                                    )}
+                                    
+                                  
+                                    {getGroupUnsavedCount(lesson.id_grupy) > 0 && (
+                                        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <div className="flex flex-col min-[500px]:flex-row min-[500px]:items-center min-[500px]:justify-between">
+                                                <div className="flex items-center gap-2 mb-3 min-[500px]:mb-0">
+                                                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                                                    <span className="text-sm text-yellow-800 font-medium">
+                                                        📝 {getGroupUnsavedCount(lesson.id_grupy)} niezapisanych zmian obecności dla tej grupy
+                                                    </span>
+                                                </div>
+                                                <div className="flex gap-2 justify-center min-[500px]:justify-end">
+                                                    <button
+                                                        onClick={() => saveGroupPresences(lesson.id_grupy)}
+                                                        disabled={saving}
+                                                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 flex items-center gap-1"
+                                                    >
+                                                        {saving ? (
+                                                            <>
+                                                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                                Zapisywanie...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                💾 Zapisz zastępstwo
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => cancelGroupChanges(lesson.id_grupy)}
+                                                        disabled={saving}
+                                                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                                                    >
+                                                        ❌ Anuluj
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             ))}
@@ -1276,7 +1360,7 @@ export default function TeacherCoursesPage() {
                                                 .flatMap(c => c.grupy)
                                                 .find(g => g.zajecia?.some(z => z.id_zajec === remarkModal.zajecie?.id_zajec));
 
-                                            // Filtruj tylko obecnych uczniów
+                                           
                                             const obecniUczniowie = grupa?.uczniowie?.filter(student =>
                                                 isStudentPresent(remarkModal.zajecie, student.id_ucznia)
                                             ) || [];
@@ -1559,14 +1643,14 @@ function GroupSection({
                             
                             {getGroupUnsavedCount(grupa.id_grupa) > 0 && (
                                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex flex-col min-[500px]:flex-row min-[500px]:items-center min-[500px]:justify-between">
+                                        <div className="flex items-center gap-2 mb-3 min-[500px]:mb-0">
                                             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
                                             <span className="text-sm text-yellow-800 font-medium">
                                                 📝 {getGroupUnsavedCount(grupa.id_grupa)} niezapisanych zmian obecności w tej grupie
                                             </span>
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 justify-center min-[500px]:justify-end">
                                             <button
                                                 onClick={() => saveGroupPresences(grupa.id_grupa)}
                                                 disabled={saving}
@@ -1626,8 +1710,9 @@ function AttendanceMatrix({
                 <table className="min-w-full">
                     <thead>
                     <tr className="bg-gray-50">
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 sticky left-0 bg-gray-50 border-r min-w-[200px] z-10">
-                            Uczeń
+                        <th className="px-1 py-3 text-left text-xs min-[500px]:text-sm font-medium text-gray-700 sticky left-0 bg-gray-50 border-r w-auto max-[499px]:w-fit max-[499px]:max-w-[70px] min-[500px]:min-w-[200px] z-10">
+                            <span className="min-[500px]:hidden">U</span>
+                            <span className="hidden min-[500px]:inline">Uczeń</span>
                         </th>
 
                         {grupa.zajecia.map((zajecie, index) => {
@@ -1695,19 +1780,25 @@ function AttendanceMatrix({
                     {grupa.uczniowie.map((student, rowIndex) => {
                         return (
                             <tr key={student.id_ucznia} className={rowIndex % 2 ? "bg-gray-50" : "bg-white"}>
-                                <td className="px-4 py-3 sticky left-0 bg-inherit border-r z-5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <td className="px-1 py-2 min-[500px]:px-4 min-[500px]:py-3 sticky left-0 bg-inherit border-r z-5 w-auto min-w-0 max-[499px]:w-fit">
+                                    <div className="flex items-center gap-0 min-[500px]:gap-2 w-fit max-[499px]:max-w-[70px]">
+                                        <div className="w-8 h-8 bg-blue-100 rounded-full items-center justify-center flex-shrink-0 hidden min-[500px]:flex">
                                             <span className="text-blue-600 text-sm font-medium">
                                                 {student.uzytkownik?.imie?.charAt(0).toUpperCase() || '?'}
                                             </span>
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="font-medium truncate text-gray-900">
-                                                {getStudentFullName(student)}
+                                        <div className="min-w-0 flex-1 overflow-hidden">
+                                            <div className="font-medium truncate text-gray-900 text-xs min-[500px]:text-base whitespace-nowrap">
+                                                <span className="min-[500px]:hidden">
+                                                    {student.uzytkownik?.nazwisko?.substring(0, 6) || 'Brak'}
+                                                </span>
+                                                <span className="hidden min-[500px]:inline">
+                                                    {getStudentFullName(student)}
+                                                </span>
                                             </div>
-                                            <div className="text-xs text-gray-500">
-                                                Punkty: {student.saldo_punktow}
+                                            <div className="text-xs text-gray-500 hidden min-[400px]:block whitespace-nowrap">
+                                                <span className="min-[500px]:hidden">P: {student.saldo_punktow}</span>
+                                                <span className="hidden min-[500px]:inline">Punkty: {student.saldo_punktow}</span>
                                             </div>
                                         </div>
                                     </div>

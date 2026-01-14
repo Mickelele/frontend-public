@@ -88,20 +88,20 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
                         </button>
                     </>
                 ) : (
-                    <>
+                    <div className="flex flex-col min-[520px]:flex-row gap-2 min-[520px]:gap-4">
                         <Link
                             href="/auth/login"
-                            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-xl transition-all duration-300 font-semibold border border-white/30"
+                            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all duration-300 font-semibold border border-white/30 text-center"
                         >
                             Logowanie
                         </Link>
                         <Link
                             href="/auth/register"
-                            className="bg-white text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-xl transition-all duration-300 font-bold shadow-lg hover:shadow-xl"
+                            className="bg-white text-orange-500 hover:bg-orange-50 px-4 py-2 rounded-xl transition-all duration-300 font-bold shadow-lg hover:shadow-xl text-center"
                         >
                             Zapisz się na kurs
                         </Link>
-                    </>
+                    </div>
                 )}
             </div>
         </nav>
