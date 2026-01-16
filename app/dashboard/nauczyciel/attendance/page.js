@@ -343,11 +343,37 @@ export default function TeacherCoursesPage() {
                     const grupaId = lesson.id_grupy;
                     
                     try {
-                       
+                        
                         const [students, groupData] = await Promise.all([
-                            getGroupStudents(grupaId),
-                            getGroupById(grupaId)
+                            getGroupStudents(grupaId).catch(err => {
+                                if (err.status === 403 || 
+                                    err.message?.includes('403') || 
+                                    err.message?.includes('Forbidden') || 
+                                    err.message?.includes('Brak dostępu') ||
+                                    err.message?.includes('Unauthorized')) {
+                                    console.log(`Brak dostępu do uczniów grupy ${grupaId} dla zastępstwa - pomijam`);
+                                    return [];
+                                }
+                                throw err;
+                            }),
+                            getGroupById(grupaId).catch(err => {
+                                if (err.status === 403 || 
+                                    err.message?.includes('403') || 
+                                    err.message?.includes('Forbidden') || 
+                                    err.message?.includes('Brak dostępu') ||
+                                    err.message?.includes('Unauthorized')) {
+                                    console.log(`Brak dostępu do grupy ${grupaId} dla zastępstwa - pomijam`);
+                                    return null;
+                                }
+                                throw err;
+                            })
                         ]);
+
+                        
+                        if (!groupData || !students) {
+                            console.log(`Pomijam zastępstwo dla grupy ${grupaId} - brak uprawnień`);
+                            return null;
+                        }
                         
                    
                         const studentsWithUsers = await Promise.all(
