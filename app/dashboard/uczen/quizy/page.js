@@ -123,13 +123,11 @@ export default function StudentQuizzesPage() {
         try {
             const averagesMap = {};
             
-            // Pobierz średnie dla każdego quizu który uczeń rozwiązał
             await Promise.all(
                 Object.keys(quizResults).map(async (quizId) => {
                     try {
                         const allResults = await getQuizResultsByQuiz(quizId);
                         
-                        // Odfiltruj wynik tego ucznia
                         const otherResults = allResults.filter(result => result.id_ucznia !== user.id);
                         
                         if (otherResults.length > 0) {
@@ -162,7 +160,6 @@ export default function StudentQuizzesPage() {
                 return;
             }
             
-            // Porównaj ostatnie 3 quizy z poprzednimi 3
             const recentQuizzes = solvedQuizzes.slice(-3);
             const earlierQuizzes = solvedQuizzes.slice(-6, -3);
             
@@ -266,7 +263,6 @@ export default function StudentQuizzesPage() {
                     </div>
                 </div>
 
-                {/* Sekcja trendu postępów */}
                 {progressTrend && (
                     <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
                         <div className="flex items-center gap-3 mb-4">
@@ -391,7 +387,6 @@ export default function StudentQuizzesPage() {
                                                     )}
                                                 </div>
                                                 
-                                                {/* Średnia grupy */}
                                                 {groupAverage && (
                                                     <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
                                                         <div className="flex justify-between items-center mb-2">
