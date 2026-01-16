@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getMyCourses } from "../../../../lib/api/course.api";
 import { getGroupHomeworks, addHomework, getHomeworkAnswers, gradeHomeworkAnswer } from "../../../../lib/api/course.api";
+import { awardHomeworkPoints, revokeHomeworkPoints } from "../../../../lib/api/student-points.api";
 
 export default function TeacherHomeworkPage() {
     const [courses, setCourses] = useState([]);
@@ -28,6 +29,7 @@ export default function TeacherHomeworkPage() {
         visible: false,
         answerId: null,
         homeworkId: null,
+        studentId: null,
         studentName: "",
         answerText: "",
         currentGrade: null,
@@ -36,6 +38,16 @@ export default function TeacherHomeworkPage() {
 
     const [groupHomeworks, setGroupHomeworks] = useState({});
     const [homeworkAnswers, setHomeworkAnswers] = useState({});
+
+    
+    const calculateHomeworkPoints = (grade) => {
+        if (grade >= 80) return 5;     
+        if (grade >= 60) return 4;      
+        if (grade >= 40) return 3;      
+        if (grade >= 20) return 2;      
+        if (grade > 0) return 1;        
+        return 0;                       
+    };
 
     const dniTygodnia = [
         "Poniedziałek",
@@ -164,11 +176,12 @@ export default function TeacherHomeworkPage() {
         });
     };
 
-    const openGradeModal = (answerId, homeworkId, studentName, answerText, currentGrade) => {
+    const openGradeModal = (answerId, homeworkId, studentId, studentName, answerText, currentGrade) => {
         setGradeModal({
             visible: true,
             answerId,
             homeworkId,
+            studentId,
             studentName,
             answerText,
             currentGrade,
@@ -181,6 +194,7 @@ export default function TeacherHomeworkPage() {
             visible: false,
             answerId: null,
             homeworkId: null,
+            studentId: null,
             studentName: "",
             answerText: "",
             currentGrade: null,
@@ -264,6 +278,42 @@ export default function TeacherHomeworkPage() {
 
             const result = await gradeHomeworkAnswer(gradeData);
             console.log('Odpowiedź z API:', result);
+
+            
+            console.log('=== DEBUG PUNKTÓW ===');
+            console.log('gradeModal.studentId:', gradeModal.studentId);
+            console.log('grade:', grade);
+            console.log('grade > 0:', grade > 0);
+
+            
+            if (gradeModal.studentId) {
+                try {
+                    
+                    if (gradeModal.currentGrade !== null && gradeModal.currentGrade !== undefined && gradeModal.currentGrade > 0) {
+                        const previousPoints = calculateHomeworkPoints(gradeModal.currentGrade);
+                        if (previousPoints > 0) {
+                            console.log(`Odejmowanie ${previousPoints} punktów za poprzednią ocenę ${gradeModal.currentGrade}%`);
+                            await revokeHomeworkPoints(gradeModal.studentId, previousPoints);
+                            console.log(`Odjęto ${previousPoints} punktów uczniowi ${gradeModal.studentId}`);
+                        }
+                    }
+
+                    
+                    if (grade > 0) {
+                        const newPoints = calculateHomeworkPoints(grade);
+                        if (newPoints > 0) {
+                            console.log(`Przyznawanie ${newPoints} punktów za nową ocenę ${grade}%`);
+                            await awardHomeworkPoints(gradeModal.studentId, newPoints);
+                            console.log(`Przyznano ${newPoints} punktów uczniowi ${gradeModal.studentId} za ocenę ${grade}%`);
+                        }
+                    }
+                } catch (pointsError) {
+                    console.error('Błąd zarządzania punktami:', pointsError);
+                    
+                }
+            } else {
+                console.log('Brak studentId - punkty nie zarządzane');
+            }
 
             
             if (gradeModal.homeworkId) {
@@ -776,6 +826,7 @@ function GroupSection({
                                                                                         onClick={() => onOpenGradeModal(
                                                                                             studentAnswer.id_odpowiedzi,
                                                                                             homework.id_zadania,
+                                                                                            uczen.id_ucznia,
                                                                                             `${uczen.imie} ${uczen.nazwisko}`,
                                                                                             studentAnswer.tresc,
                                                                                             studentAnswer.ocena
