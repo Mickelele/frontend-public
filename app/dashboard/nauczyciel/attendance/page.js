@@ -289,36 +289,10 @@ export default function TeacherCoursesPage() {
             }
 
             if (!foundGroup) {
-                try {
-                    const grupaData = await getGroupById(grupaId);
-                    if (!grupaData || !grupaData.id_kursu) continue;
-
-                    let course = coursesMap.get(grupaData.id_kursu);
-                    
-                    if (!course) {
-                        const courseData = await getCourseById(grupaData.id_kursu);
-                        if (!courseData) continue;
-                        
-                        course = {
-                            ...courseData,
-                            grupy: []
-                        };
-                        coursesMap.set(courseData.id_kursu, course);
-                    }
-
-                    foundGroup = course.grupy.find(g => g.id_grupa === grupaId);
-                    if (!foundGroup) {
-                        foundGroup = {
-                            ...grupaData,
-                            uczniowie: subLesson.uczniowie || [],
-                            zajecia: []
-                        };
-                        course.grupy.push(foundGroup);
-                    }
-                } catch (err) {
-                    console.error(`Błąd pobierania grupy/kursu dla grupy ${grupaId}:`, err);
-                    continue;
-                }
+                // Pomiń zastępstwa dla grup, które nie są przypisane do tego nauczyciela
+                // Nauczyciel powinien widzieć tylko zajęcia zastępstw dla swoich własnych grup
+                console.log(`Pomijam zastępstwo dla grupy ${grupaId} - nie jest przypisana do nauczyciela`);
+                continue;
             }
 
             if (foundGroup) {

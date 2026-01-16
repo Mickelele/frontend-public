@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getTeacherGroups } from '../../../../lib/api/teacher.api';
-import { getGroupById, getAllGroups } from '../../../../lib/api/group.api';
+import { getGroupById } from '../../../../lib/api/group.api';
 import { getStudentsByGroup } from '../../../../lib/api/student.api';
 import { getDetailedReport } from '../../../../lib/api/reports.api';
 import { getCourseById } from '../../../../lib/api/course.api';
@@ -29,11 +29,10 @@ export default function SemesterReportsPage() {
     const loadGroups = async () => {
         try {
             const teacherId = getUserIdFromToken();
-            const allGroups = await getAllGroups();
-            const teacherGroups = allGroups.filter(g => g.id_nauczyciela === teacherId);
+            const teacherGroups = await getTeacherGroups(teacherId);
             setGroups(teacherGroups || []);
         } catch (err) {
-            console.error('Błąd pobierania grup:', err);
+            console.error('Błąd pobierania grup nauczyciela:', err);
         }
     };
 
