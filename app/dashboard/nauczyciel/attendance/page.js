@@ -289,8 +289,6 @@ export default function TeacherCoursesPage() {
             }
 
             if (!foundGroup) {
-                // Pomiń zastępstwa dla grup, które nie są przypisane do tego nauczyciela
-                // Nauczyciel powinien widzieć tylko zajęcia zastępstw dla swoich własnych grup
                 console.log(`Pomijam zastępstwo dla grupy ${grupaId} - nie jest przypisana do nauczyciela`);
                 continue;
             }
