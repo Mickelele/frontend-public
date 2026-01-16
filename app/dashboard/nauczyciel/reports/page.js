@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getTeacherGroups } from '../../../../lib/api/teacher.api';
+import { getMyCourses } from '../../../../lib/api/course.api';
 import { getGroupById } from '../../../../lib/api/group.api';
 import { getStudentsByGroup } from '../../../../lib/api/student.api';
 import { getDetailedReport } from '../../../../lib/api/reports.api';
@@ -28,9 +28,21 @@ export default function SemesterReportsPage() {
 
     const loadGroups = async () => {
         try {
-            const teacherId = getUserIdFromToken();
-            const teacherGroups = await getTeacherGroups(teacherId);
-            setGroups(teacherGroups || []);
+            const teacherCourses = await getMyCourses();
+            const allGroups = [];
+            
+            (teacherCourses || []).forEach(course => {
+                if (course.grupy && Array.isArray(course.grupy)) {
+                    course.grupy.forEach(grupa => {
+                        allGroups.push({
+                            ...grupa,
+                            kurs_nazwa: course.nazwa || 'Nieznany kurs'
+                        });
+                    });
+                }
+            });
+            
+            setGroups(allGroups);
         } catch (err) {
             console.error('Błąd pobierania grup nauczyciela:', err);
         }
