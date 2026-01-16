@@ -7,7 +7,8 @@ import {
     getQuizResultsByStudent, 
     getQuizById, 
     getQuestionsByQuiz, 
-    getAnswersByQuestion 
+    getAnswersByQuestion,
+    getQuizResultsByQuiz 
 } from '../../../../lib/api/quiz.api';
 import { getStudentById } from '../../../../lib/api/student.api';
 import { getLessonsForGroup } from '../../../../lib/api/lesson.api';
@@ -23,6 +24,8 @@ export default function StudentQuizzesPage() {
     const [quizResults, setQuizResults] = useState({});
     const [modalQuizId, setModalQuizId] = useState(null);
     const [quizDetails, setQuizDetails] = useState({});
+    const [groupAverages, setGroupAverages] = useState({});
+    const [progressTrend, setProgressTrend] = useState(null);
 
     useEffect(() => {
         if (user?.id) {
@@ -36,6 +39,13 @@ export default function StudentQuizzesPage() {
             loadQuizResults();
         }
     }, [groupId]);
+
+    useEffect(() => {
+        if (groupId && Object.keys(quizResults).length > 0) {
+            loadGroupAverages();
+            calculateProgressTrend();
+        }
+    }, [quizResults, groupId]);
 
     const loadStudentData = async () => {
         try {
@@ -106,6 +116,77 @@ export default function StudentQuizzesPage() {
         } catch (err) {
             console.error('Błąd ładowania wyników:', err);
             setQuizResults({});
+        }
+    };
+
+    const loadGroupAverages = async () => {
+        try {
+            const averagesMap = {};
+            
+            // Pobierz średnie dla każdego quizu który uczeń rozwiązał
+            await Promise.all(
+                Object.keys(quizResults).map(async (quizId) => {
+                    try {
+                        const allResults = await getQuizResultsByQuiz(quizId);
+                        
+                        // Odfiltruj wynik tego ucznia
+                        const otherResults = allResults.filter(result => result.id_ucznia !== user.id);
+                        
+                        if (otherResults.length > 0) {
+                            const average = otherResults.reduce((sum, result) => sum + (result.wynik || 0), 0) / otherResults.length;
+                            averagesMap[quizId] = {
+                                average: Math.round(average * 10) / 10,
+                                studentsCount: otherResults.length
+                            };
+                        }
+                    } catch (err) {
+                        console.error(`Błąd pobierania średniej dla quizu ${quizId}:`, err);
+                    }
+                })
+            );
+            
+            setGroupAverages(averagesMap);
+        } catch (err) {
+            console.error('Błąd ładowania średnich grupy:', err);
+        }
+    };
+
+    const calculateProgressTrend = () => {
+        try {
+            const solvedQuizzes = Object.values(quizResults)
+                .filter(result => result.data_uzyskania)
+                .sort((a, b) => new Date(a.data_uzyskania) - new Date(b.data_uzyskania));
+            
+            if (solvedQuizzes.length < 2) {
+                setProgressTrend(null);
+                return;
+            }
+            
+            // Porównaj ostatnie 3 quizy z poprzednimi 3
+            const recentQuizzes = solvedQuizzes.slice(-3);
+            const earlierQuizzes = solvedQuizzes.slice(-6, -3);
+            
+            if (earlierQuizzes.length === 0) {
+                setProgressTrend(null);
+                return;
+            }
+            
+            const recentAverage = recentQuizzes.reduce((sum, quiz) => sum + (quiz.wynik || 0), 0) / recentQuizzes.length;
+            const earlierAverage = earlierQuizzes.reduce((sum, quiz) => sum + (quiz.wynik || 0), 0) / earlierQuizzes.length;
+            
+            const difference = recentAverage - earlierAverage;
+            const percentageChange = earlierAverage > 0 ? (difference / earlierAverage) * 100 : 0;
+            
+            setProgressTrend({
+                isImproving: difference > 0,
+                difference: Math.round(difference * 10) / 10,
+                percentageChange: Math.round(percentageChange * 10) / 10,
+                recentAverage: Math.round(recentAverage * 10) / 10,
+                earlierAverage: Math.round(earlierAverage * 10) / 10
+            });
+        } catch (err) {
+            console.error('Błąd obliczania trendu:', err);
+            setProgressTrend(null);
         }
     };
 
@@ -185,6 +266,57 @@ export default function StudentQuizzesPage() {
                     </div>
                 </div>
 
+                {/* Sekcja trendu postępów */}
+                {progressTrend && (
+                    <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className={`p-2 rounded-xl ${progressTrend.isImproving ? 'bg-green-100' : 'bg-orange-100'}`}>
+                                {progressTrend.isImproving ? (
+                                    <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L10 4.414 4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd"/>
+                                    </svg>
+                                ) : (
+                                    <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L10 15.586l5.293-5.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                    </svg>
+                                )}
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-800">
+                                📈 Twój postęp
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className={`p-4 rounded-xl ${progressTrend.isImproving ? 'bg-green-50 border-2 border-green-200' : 'bg-orange-50 border-2 border-orange-200'}`}>
+                                <p className="text-sm font-medium text-gray-600">Status</p>
+                                <p className={`text-lg font-bold ${progressTrend.isImproving ? 'text-green-600' : 'text-orange-600'}`}>
+                                    {progressTrend.isImproving ? '📈 Poprawiasz się!' : '📉 Spadek wyników'}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {progressTrend.isImproving ? 'Świetna robota! Kontynuuj!' : 'Nie poddawaj się, następnym razem pójdzie lepiej!'}
+                                </p>
+                            </div>
+                            <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
+                                <p className="text-sm font-medium text-gray-600">Zmiana</p>
+                                <p className="text-lg font-bold text-blue-600">
+                                    {progressTrend.difference > 0 ? '+' : ''}{progressTrend.difference} pkt
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    ({progressTrend.percentageChange > 0 ? '+' : ''}{progressTrend.percentageChange}%)
+                                </p>
+                            </div>
+                            <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-xl">
+                                <p className="text-sm font-medium text-gray-600">Porównanie</p>
+                                <p className="text-lg font-bold text-purple-600">
+                                    {progressTrend.recentAverage} vs {progressTrend.earlierAverage}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Ostatnie vs wcześniejsze quizy
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {error && (
                     <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-lg mb-6 shadow-md">
                         <div className="flex items-center">
@@ -210,6 +342,7 @@ export default function StudentQuizzesPage() {
                         {quizzes.map((quiz) => {
                             const result = quizResults[quiz.id_quizu];
                             const isSolved = !!result;
+                            const groupAverage = groupAverages[quiz.id_quizu];
                             
                             return (
                                 <div
@@ -234,28 +367,60 @@ export default function StudentQuizzesPage() {
                                         )}
                                         
                                         {isSolved && (
-                                            <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-semibold text-green-800">
-                                                        🏆 Twój wynik
-                                                    </span>
-                                                    <span className="text-2xl font-bold text-green-600">
-                                                        {result.wynik} pkt
-                                                    </span>
+                                            <>
+                                                <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="text-sm font-semibold text-green-800">
+                                                            🏆 Twój wynik
+                                                        </span>
+                                                        <span className="text-2xl font-bold text-green-600">
+                                                            {result.wynik} pkt
+                                                        </span>
+                                                    </div>
+                                                    {result.data_uzyskania && (
+                                                        <p className="text-xs text-green-600 flex items-center gap-1">
+                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                                                            </svg>
+                                                            Ukończono: {new Date(result.data_uzyskania).toLocaleDateString('pl-PL', {
+                                                                day: 'numeric',
+                                                                month: 'long',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                                {result.data_uzyskania && (
-                                                    <p className="text-xs text-green-600 flex items-center gap-1">
-                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
-                                                        </svg>
-                                                        Ukończono: {new Date(result.data_uzyskania).toLocaleDateString('pl-PL', {
-                                                            day: 'numeric',
-                                                            month: 'long',
-                                                            year: 'numeric'
-                                                        })}
-                                                    </p>
+                                                
+                                                {/* Średnia grupy */}
+                                                {groupAverage && (
+                                                    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-sm font-semibold text-blue-800">
+                                                                👥 Średnia grupy
+                                                            </span>
+                                                            <span className="text-2xl font-bold text-blue-600">
+                                                                {groupAverage.average} pkt
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <p className="text-xs text-blue-600">
+                                                                Na podstawie {groupAverage.studentsCount} {groupAverage.studentsCount === 1 ? 'ucznia' : 'uczniów'}
+                                                            </p>
+                                                            <div className={`text-xs px-2 py-1 rounded-full font-bold ${ 
+                                                                result.wynik > groupAverage.average 
+                                                                    ? 'bg-green-100 text-green-800' 
+                                                                    : result.wynik === groupAverage.average
+                                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                                    : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                                {result.wynik > groupAverage.average ? '🚀 Powyżej średniej!' : 
+                                                                 result.wynik === groupAverage.average ? '➡️ Na poziomie średniej' : 
+                                                                 '📚 Poniżej średniej'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 )}
-                                            </div>
+                                            </>
                                         )}
                                         
                                         <button
