@@ -44,9 +44,9 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
 
                 {!loading && !user && (
                     <div className="hidden md:flex space-x-6 text-white font-semibold">
-                        <Link href="/#oferta" className="hover:text-orange-100 transition-colors duration-300 text-lg">Oferta</Link>
-                        <Link href="/#o-nas" className="hover:text-orange-100 transition-colors duration-300 text-lg">O nas</Link>
-                        <Link href="/#lokalizacja" className="hover:text-orange-100 transition-colors duration-300 text-lg">Lokalizacja</Link>
+                        <Link href="/#kursy" className="hover:text-orange-100 transition-colors duration-300 text-lg">Kursy</Link>
+                        <Link href="/#kadra" className="hover:text-orange-100 transition-colors duration-300 text-lg">Kadra</Link>
+                        <Link href="/#nauczyciele" className="hover:text-orange-100 transition-colors duration-300 text-lg">Kalendarz</Link>
                     </div>
                 )}
             </div>

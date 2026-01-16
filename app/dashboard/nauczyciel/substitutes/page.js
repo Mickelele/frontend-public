@@ -581,12 +581,21 @@ export default function SubstitutesPage() {
                                                     )}
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => handleCancelTaken(sub.id_zastepstwa)}
-                                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition"
-                                            >
-                                                ❌ Zrezygnuj
-                                            </button>
+                                            {(() => {
+                                                const lessonDate = new Date(sub.zajecia?.data);
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                lessonDate.setHours(0, 0, 0, 0);
+                                                
+                                                return lessonDate > today && (
+                                                    <button
+                                                        onClick={() => handleCancelTaken(sub.id_zastepstwa)}
+                                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition"
+                                                    >
+                                                        ❌ Zrezygnuj
+                                                    </button>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 ))}

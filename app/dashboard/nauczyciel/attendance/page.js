@@ -1108,13 +1108,13 @@ export default function TeacherCoursesPage() {
                 
                 {substituteLessons.length > 0 && (() => {
                     
-                    const twoDaysAgo = new Date();
-                    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-                    twoDaysAgo.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
                     
                     const filteredLessons = substituteLessons.filter(lesson => {
                         const lessonDate = new Date(lesson.data);
-                        return lessonDate >= twoDaysAgo;
+                        lessonDate.setHours(0, 0, 0, 0);
+                        return lessonDate >= today;
                     });
                     
                     if (filteredLessons.length === 0) return null;

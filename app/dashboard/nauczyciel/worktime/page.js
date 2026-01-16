@@ -298,12 +298,15 @@ export default function TeacherLessonsPage() {
                             <div className="text-blue-600 text-xs font-medium">Wszystkie</div>
                             <div className="text-lg font-bold text-blue-700">
                                 {lessons.filter(lesson => {
+                                
                                     if (lesson.isSubstituteLesson) return true;
                                     
+                                 
                                     const substituteAssigned = mySubstitutesReporting.find(sub => 
                                         (sub.zajecia_id_zajec === lesson.id_zajec || sub.zajecia?.id_zajec === lesson.id_zajec) && 
                                         sub.id_nauczyciel_zastepujacy
                                     );
+                                   
                                     return !substituteAssigned;
                                 }).length}
                             </div>
@@ -314,12 +317,15 @@ export default function TeacherLessonsPage() {
                                 {lessons.filter(lesson => {
                                     if (!isLessonPast(lesson.data)) return false;
                                     
+                                   
                                     if (lesson.isSubstituteLesson) return true;
+                                    
                                     
                                     const substituteAssigned = mySubstitutesReporting.find(sub => 
                                         (sub.zajecia_id_zajec === lesson.id_zajec || sub.zajecia?.id_zajec === lesson.id_zajec) && 
                                         sub.id_nauczyciel_zastepujacy
                                     );
+                                    
                                     return !substituteAssigned;
                                 }).length}
                             </div>
@@ -330,12 +336,15 @@ export default function TeacherLessonsPage() {
                                 {lessons.filter(lesson => {
                                     if (isLessonPast(lesson.data)) return false;
                                     
+                                    
                                     if (lesson.isSubstituteLesson) return true;
                                     
+                                   
                                     const substituteAssigned = mySubstitutesReporting.find(sub => 
                                         (sub.zajecia_id_zajec === lesson.id_zajec || sub.zajecia?.id_zajec === lesson.id_zajec) && 
                                         sub.id_nauczyciel_zastepujacy
                                     );
+                                  
                                     return !substituteAssigned;
                                 }).length}
                             </div>
