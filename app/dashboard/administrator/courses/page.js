@@ -17,12 +17,13 @@ import {
     removeStudentFromGroup,
     adjustStudentCount
 } from '../../../../lib/api/group.api';
-import { 
+import {
     getLessonsForGroup,
     createLesson, 
     updateLesson, 
     deleteLesson,
-    createLessonsForGroup
+    createLessonsForGroup,
+    updateRoomForGroupLessons
 } from '../../../../lib/api/lesson.api';
 import { 
     getAllRooms, 
@@ -82,6 +83,12 @@ export default function CoursesManagementPage() {
     const [selectedGroupFilterLessons, setSelectedGroupFilterLessons] = useState('');
     const [searchLessonTerm, setSearchLessonTerm] = useState('');
     const [selectedLocationFilterRooms, setSelectedLocationFilterRooms] = useState('');
+    const [searchRoomNumber, setSearchRoomNumber] = useState('');
+    const [minCapacity, setMinCapacity] = useState('');
+    
+  
+    const [lessonsPerPage, setLessonsPerPage] = useState(25);
+    const [currentLessonsPage, setCurrentLessonsPage] = useState(1);
 
 
     const [courseForm, setCourseForm] = useState({ 
@@ -111,6 +118,20 @@ export default function CoursesManagementPage() {
     });
     const [bulkLessonLoading, setBulkLessonLoading] = useState(false);
     const [bulkLessonSuccess, setBulkLessonSuccess] = useState(null);
+    
+   
+    const [showBulkRoomModal, setShowBulkRoomModal] = useState(false);
+    const [bulkRoomForm, setBulkRoomForm] = useState({
+        id_grupa: '',
+        Sala_id_sali: ''
+    });
+    const [bulkRoomLoading, setBulkRoomLoading] = useState(false);
+    const [bulkRoomSuccess, setBulkRoomSuccess] = useState(null);
+    
+    
+    const [bulkRoomLocationFilter, setBulkRoomLocationFilter] = useState('');
+    const [bulkRoomCapacityFilter, setBulkRoomCapacityFilter] = useState('');
+    const [bulkRoomSearchFilter, setBulkRoomSearchFilter] = useState('');
     const [groupSearchTerm, setGroupSearchTerm] = useState('');
 
     useEffect(() => {
@@ -226,7 +247,8 @@ export default function CoursesManagementPage() {
             if (editingGroup) {
                 await updateGroup(editingGroup.id_grupa, formData);
             } else {
-                await createGroup(formData);
+                
+                await createGroup(formData, { autoCreateLessons: false });
             }
             setShowGroupModal(false);
             setGroupForm({ Kurs_id_kursu: '', id_nauczyciela: '', godzina: '', dzien_tygodnia: '' });
@@ -394,9 +416,11 @@ export default function CoursesManagementPage() {
             setBulkLessonLoading(true);
             setBulkLessonSuccess(null);
 
-            const result = await createLessonsForGroup(parseInt(bulkLessonForm.id_grupa));
+            const result = await createLessonsForGroup(parseInt(bulkLessonForm.id_grupa), { 
+                assignRoom: false 
+            });
             
-            setBulkLessonSuccess(`Pomyślnie utworzono ${result.zajecia?.length || 'wiele'} zajęć dla grupy`);
+            setBulkLessonSuccess(`Pomyślnie utworzono ${result.zajecia?.length || 'wiele'} zajęć dla grupy (bez przypisanej sali)`);
             
          
             setBulkLessonForm({ id_grupa: '' });
@@ -415,6 +439,52 @@ export default function CoursesManagementPage() {
             setBulkLessonSuccess('❌ Nie udało się stworzyć zajęć dla grupy');
         } finally {
             setBulkLessonLoading(false);
+        }
+    };
+
+    const handleUpdateRoomForGroup = async () => {
+        try {
+            if (!bulkRoomForm.id_grupa || !bulkRoomForm.Sala_id_sali) {
+                alert('Wybierz grupę i salę');
+                return;
+            }
+
+            setBulkRoomLoading(true);
+            setBulkRoomSuccess(null);
+
+            const groupId = parseInt(bulkRoomForm.id_grupa);
+            const roomId = parseInt(bulkRoomForm.Sala_id_sali);
+
+            if (isNaN(groupId) || isNaN(roomId)) {
+                setBulkRoomSuccess('❌ Nieprawidłowe ID grupy lub sali');
+                return;
+            }
+
+            await updateRoomForGroupLessons(groupId, roomId);
+            
+            setBulkRoomSuccess('✅ Pomyślnie zaktualizowano salę dla wszystkich zajęć grupy');
+            
+            setBulkRoomForm({ id_grupa: '', Sala_id_sali: '' });
+            
+            loadData();
+            
+            setTimeout(() => {
+                setShowBulkRoomModal(false);
+                setBulkRoomSuccess(null);
+            }, 3000);
+
+        } catch (error) {
+            console.error('Błąd aktualizacji sali dla grupy:', error);
+            
+            if (error.message.includes('Nie znaleziono zajęć dla tej grupy')) {
+                setBulkRoomSuccess('❌ Ta grupa nie ma żadnych zajęć. Najpierw utwórz zajęcia dla grupy.');
+            } else if (error.message.includes('ID sali jest wymagane')) {
+                setBulkRoomSuccess('❌ Wybierz prawidłową salę');
+            } else {
+                setBulkRoomSuccess('❌ Nie udało się zaktualizować sali dla grupy');
+            }
+        } finally {
+            setBulkRoomLoading(false);
         }
     };
 
@@ -591,6 +661,53 @@ export default function CoursesManagementPage() {
         });
         
         return conflicts.length > 0;
+    };
+
+    const isRoomOccupiedForGroup = (roomId, groupId) => {
+        if (!groupId) return false;
+        
+        const targetGroup = groups.find(g => g.id_grupa === parseInt(groupId));
+        if (!targetGroup || !targetGroup.godzina) return false;
+        
+        const targetGroupLessons = lessons.filter(l => l.id_grupy === parseInt(groupId));
+        if (targetGroupLessons.length === 0) return false;
+        
+        const targetTime = targetGroup.godzina.substring(0, 5);
+        const [hours, minutes] = targetTime.split(':').map(Number);
+        const targetTimeMinutes = hours * 60 + minutes;
+        
+        
+        const bufferMinutes = 90;
+        const windowStartMinutes = targetTimeMinutes - bufferMinutes;
+        const windowEndMinutes = targetTimeMinutes + bufferMinutes;
+        
+        for (const targetLesson of targetGroupLessons) {
+            if (!targetLesson.data) continue;
+            
+            const conflictingLessons = lessons.filter(lesson => {
+                if (lesson.id_grupy === parseInt(groupId)) return false;
+                if (lesson.Sala_id_sali !== parseInt(roomId)) return false;
+                if (!lesson.data) return false;
+                
+                const lessonDate = lesson.data.split('T')[0];
+                const targetDate = targetLesson.data.split('T')[0];
+                if (lessonDate !== targetDate) return false;
+                
+                const lessonGroup = groups.find(g => g.id_grupa === lesson.id_grupy);
+                if (!lessonGroup || !lessonGroup.godzina) return false;
+                
+                const lessonStart = lessonGroup.godzina.substring(0, 5);
+                const [lHours, lMinutes] = lessonStart.split(':').map(Number);
+                const lessonStartMinutes = lHours * 60 + lMinutes;
+                
+                
+                return lessonStartMinutes >= windowStartMinutes && lessonStartMinutes <= windowEndMinutes;
+            });
+            
+            if (conflictingLessons.length > 0) return true;
+        }
+        
+        return false;
     };
 
     const handleEditRoom = (room) => {
@@ -955,13 +1072,16 @@ export default function CoursesManagementPage() {
                             <div>
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-semibold text-gray-800">
-                                        Zajęcia ({lessons.filter(lesson => {
-                                            const group = groups.find(g => g.id_grupa === lesson.id_grupy);
-                                            const matchesCourse = !selectedCourseFilterLessons || group?.Kurs_id_kursu === parseInt(selectedCourseFilterLessons);
-                                            const matchesGroup = !selectedGroupFilterLessons || lesson.id_grupy === parseInt(selectedGroupFilterLessons);
-                                            const matchesSearch = !searchLessonTerm || lesson.tematZajec?.toLowerCase().includes(searchLessonTerm.toLowerCase());
-                                            return matchesCourse && matchesGroup && matchesSearch;
-                                        }).length})
+                                        Zajęcia ({(() => {
+                                            const filteredLessons = lessons.filter(lesson => {
+                                                const group = groups.find(g => g.id_grupa === lesson.id_grupy);
+                                                const matchesCourse = !selectedCourseFilterLessons || group?.Kurs_id_kursu === parseInt(selectedCourseFilterLessons);
+                                                const matchesGroup = !selectedGroupFilterLessons || lesson.id_grupy === parseInt(selectedGroupFilterLessons);
+                                                const matchesSearch = !searchLessonTerm || lesson.tematZajec?.toLowerCase().includes(searchLessonTerm.toLowerCase());
+                                                return matchesCourse && matchesGroup && matchesSearch;
+                                            });
+                                            return filteredLessons.length;
+                                        })()})
                                     </h2>
                                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <button
@@ -991,12 +1111,25 @@ export default function CoursesManagementPage() {
                                         >
                                             🎯 Stwórz wiele zajęć
                                         </button>
+                                        <button
+                                            onClick={() => {
+                                                setBulkRoomForm({ id_grupa: '', Sala_id_sali: '' });
+                                                setBulkRoomSuccess(null);
+                                                setBulkRoomLocationFilter('');
+                                                setBulkRoomCapacityFilter('');
+                                                setBulkRoomSearchFilter('');
+                                                setShowBulkRoomModal(true);
+                                            }}
+                                            className="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all w-full sm:w-auto"
+                                        >
+                                            🏢 Zmień salę dla grupy
+                                        </button>
                                     </div>
                                 </div>
 
                             
                                 <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 🎓 Filtruj po kursie
@@ -1006,6 +1139,7 @@ export default function CoursesManagementPage() {
                                                 onChange={(e) => {
                                                     setSelectedCourseFilterLessons(e.target.value);
                                                     setSelectedGroupFilterLessons('');
+                                                    setCurrentLessonsPage(1);
                                                 }}
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             >
@@ -1023,7 +1157,10 @@ export default function CoursesManagementPage() {
                                             </label>
                                             <select
                                                 value={selectedGroupFilterLessons}
-                                                onChange={(e) => setSelectedGroupFilterLessons(e.target.value)}
+                                                onChange={(e) => {
+                                                    setSelectedGroupFilterLessons(e.target.value);
+                                                    setCurrentLessonsPage(1); 
+                                                }}
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 disabled={!selectedCourseFilterLessons}
                                             >
@@ -1040,26 +1177,48 @@ export default function CoursesManagementPage() {
                                                     })}
                                             </select>
                                         </div>
-                                        <div className="md:col-span-2">
+                                        <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 🔍 Szukaj po nazwie zajęć
                                             </label>
                                             <input
                                                 type="text"
                                                 value={searchLessonTerm}
-                                                onChange={(e) => setSearchLessonTerm(e.target.value)}
+                                                onChange={(e) => {
+                                                    setSearchLessonTerm(e.target.value);
+                                                    setCurrentLessonsPage(1); 
+                                                }}
                                                 placeholder="Wpisz nazwę lub temat zajęć..."
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                📄 Rekordów na stronę
+                                            </label>
+                                            <select
+                                                value={lessonsPerPage}
+                                                onChange={(e) => {
+                                                    setLessonsPerPage(parseInt(e.target.value));
+                                                    setCurrentLessonsPage(1); 
+                                                }}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value={10}>10 rekordów</option>
+                                                <option value={25}>25 rekordów</option>
+                                                <option value={50}>50 rekordów</option>
+                                                <option value={100}>100 rekordów</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     {(selectedCourseFilterLessons || selectedGroupFilterLessons || searchLessonTerm) && (
-                                        <div className="mt-3 flex gap-2">
+                                        <div className="flex gap-2">
                                             <button
                                                 onClick={() => {
                                                     setSelectedCourseFilterLessons('');
                                                     setSelectedGroupFilterLessons('');
                                                     setSearchLessonTerm('');
+                                                    setCurrentLessonsPage(1);
                                                 }}
                                                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                                             >
@@ -1083,71 +1242,171 @@ export default function CoursesManagementPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {lessons
-                                                .filter(lesson => {
+                                            {(() => {
+                                                const filteredLessons = lessons.filter(lesson => {
                                                     const group = groups.find(g => g.id_grupa === lesson.id_grupy);
                                                     const matchesCourse = !selectedCourseFilterLessons || group?.Kurs_id_kursu === parseInt(selectedCourseFilterLessons);
                                                     const matchesGroup = !selectedGroupFilterLessons || lesson.id_grupy === parseInt(selectedGroupFilterLessons);
                                                     const matchesSearch = !searchLessonTerm || lesson.tematZajec?.toLowerCase().includes(searchLessonTerm.toLowerCase());
                                                     return matchesCourse && matchesGroup && matchesSearch;
-                                                })
-                                                .map((lesson, index) => {
-                                                const group = groups.find(g => g.id_grupa === lesson.id_grupy);
-                                                const teacher = group ? teachers.find(t => t.id_nauczyciela === group.id_nauczyciela) : null;
-                                                const room = rooms.find(r => r.id_sali === lesson.Sala_id_sali);
+                                                });
                                                 
-                                                return (
-                                                    <tr
-                                                        key={lesson.id_zajec}
-                                                        className={`${
-                                                            index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                                                        } hover:bg-blue-50 transition-colors`}
-                                                    >
-                                                        <td className="px-4 py-3 text-gray-700">
-                                                            {lesson.data ? new Date(lesson.data).toLocaleDateString('pl-PL') : '-'}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-gray-700">
-                                                            {group?.godzina ? group.godzina.substring(0, 5) : 'Brak'}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-gray-700 font-medium">
-                                                            {lesson.tematZajec || 'Brak tematu'}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-gray-600">
-                                                            {group ? `Grupa #${group.id_grupa}` : 'Brak'}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-gray-600">
-                                                            {teacher?.user ? `${teacher.user.imie} ${teacher.user.nazwisko}` : 'Brak'}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-gray-600">
-                                                            {room?.numer || 'Brak'}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex gap-2 justify-center">
-                                                                <button
-                                                                    onClick={() => handleEditLesson(lesson)}
-                                                                    className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 transition-all text-sm"
-                                                                >
-                                                                    ✏️
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => openDeleteConfirm('lesson', lesson)}
-                                                                    className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition-all text-sm"
-                                                                >
-                                                                    🗑️
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
+                                                const startIndex = (currentLessonsPage - 1) * lessonsPerPage;
+                                                const endIndex = startIndex + lessonsPerPage;
+                                                const paginatedLessons = filteredLessons.slice(startIndex, endIndex);
+                                                
+                                                return paginatedLessons.map((lesson, index) => {
+                                                    const group = groups.find(g => g.id_grupa === lesson.id_grupy);
+                                                    const teacher = group ? teachers.find(t => t.id_nauczyciela === group.id_nauczyciela) : null;
+                                                    const room = rooms.find(r => r.id_sali === lesson.Sala_id_sali);
+                                                    
+                                                    return (
+                                                        <tr
+                                                            key={lesson.id_zajec}
+                                                            className={`${
+                                                                index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                                                            } hover:bg-blue-50 transition-colors`}
+                                                        >
+                                                            <td className="px-4 py-3 text-gray-700">
+                                                                {lesson.data ? new Date(lesson.data).toLocaleDateString('pl-PL') : '-'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-gray-700">
+                                                                {group?.godzina ? group.godzina.substring(0, 5) : 'Brak'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-gray-700 font-medium">
+                                                                {lesson.tematZajec || 'Brak tematu'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-gray-600">
+                                                                {group ? `Grupa #${group.id_grupa}` : 'Brak'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-gray-600">
+                                                                {teacher?.user ? `${teacher.user.imie} ${teacher.user.nazwisko}` : 'Brak'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-gray-600">
+                                                                {room?.numer || 'Brak'}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex gap-2 justify-center">
+                                                                    <button
+                                                                        onClick={() => handleEditLesson(lesson)}
+                                                                        className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 transition-all text-sm"
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => openDeleteConfirm('lesson', lesson)}
+                                                                        className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition-all text-sm"
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                });
+                                            })()}
                                         </tbody>
                                     </table>
 
-                                    {lessons.length === 0 && (
+                                    {(() => {
+                                        const filteredLessons = lessons.filter(lesson => {
+                                            const group = groups.find(g => g.id_grupa === lesson.id_grupy);
+                                            const matchesCourse = !selectedCourseFilterLessons || group?.Kurs_id_kursu === parseInt(selectedCourseFilterLessons);
+                                            const matchesGroup = !selectedGroupFilterLessons || lesson.id_grupy === parseInt(selectedGroupFilterLessons);
+                                            const matchesSearch = !searchLessonTerm || lesson.tematZajec?.toLowerCase().includes(searchLessonTerm.toLowerCase());
+                                            return matchesCourse && matchesGroup && matchesSearch;
+                                        });
+                                        
+                                        const totalPages = Math.ceil(filteredLessons.length / lessonsPerPage);
+                                        const startRecord = (currentLessonsPage - 1) * lessonsPerPage + 1;
+                                        const endRecord = Math.min(currentLessonsPage * lessonsPerPage, filteredLessons.length);
+                                        
+                                        if (filteredLessons.length > 0) {
+                                            return (
+                                                <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
+                                                    <div className="text-sm text-gray-700 mb-2 sm:mb-0">
+                                                        Wyświetlono <span className="font-medium">{startRecord}</span> - <span className="font-medium">{endRecord}</span> z <span className="font-medium">{filteredLessons.length}</span> zajęć
+                                                    </div>
+                                                    
+                                                    {totalPages > 1 && (
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => setCurrentLessonsPage(Math.max(1, currentLessonsPage - 1))}
+                                                                disabled={currentLessonsPage === 1}
+                                                                className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                ← Poprzednia
+                                                            </button>
+                                                            
+                                                            <div className="flex gap-1">
+                                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                                    let pageNum;
+                                                                    if (totalPages <= 5) {
+                                                                        pageNum = i + 1;
+                                                                    } else if (currentLessonsPage <= 3) {
+                                                                        pageNum = i + 1;
+                                                                    } else if (currentLessonsPage >= totalPages - 2) {
+                                                                        pageNum = totalPages - 4 + i;
+                                                                    } else {
+                                                                        pageNum = currentLessonsPage - 2 + i;
+                                                                    }
+                                                                    
+                                                                    return (
+                                                                        <button
+                                                                            key={pageNum}
+                                                                            onClick={() => setCurrentLessonsPage(pageNum)}
+                                                                            className={`px-3 py-1 border rounded-md text-sm font-medium ${ 
+                                                                                currentLessonsPage === pageNum 
+                                                                                ? 'bg-blue-500 text-white border-blue-500' 
+                                                                                : 'text-gray-700 border-gray-300 hover:bg-gray-100'
+                                                                            }`}
+                                                                        >
+                                                                            {pageNum}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            
+                                                            <button
+                                                                onClick={() => setCurrentLessonsPage(Math.min(totalPages, currentLessonsPage + 1))}
+                                                                disabled={currentLessonsPage === totalPages}
+                                                                className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                Następna →
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    {lessons.filter(lesson => {
+                                        const group = groups.find(g => g.id_grupa === lesson.id_grupy);
+                                        const matchesCourse = !selectedCourseFilterLessons || group?.Kurs_id_kursu === parseInt(selectedCourseFilterLessons);
+                                        const matchesGroup = !selectedGroupFilterLessons || lesson.id_grupy === parseInt(selectedGroupFilterLessons);
+                                        const matchesSearch = !searchLessonTerm || lesson.tematZajec?.toLowerCase().includes(searchLessonTerm.toLowerCase());
+                                        return matchesCourse && matchesGroup && matchesSearch;
+                                    }).length === 0 && (
                                         <div className="text-center py-12">
-                                            <p className="text-gray-500 text-lg">
-                                                Brak zajęć. Dodaj pierwsze zajęcia!
+                                            <div className="text-6xl mb-4">📚</div>
+                                            <p className="text-gray-500 text-lg mb-2">
+                                                {lessons.length === 0 ? 'Brak zajęć. Dodaj pierwsze zajęcia!' : 'Nie znaleziono zajęć spełniających kryteria filtrowania'}
                                             </p>
+                                            {(selectedCourseFilterLessons || selectedGroupFilterLessons || searchLessonTerm) && (
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedCourseFilterLessons('');
+                                                        setSelectedGroupFilterLessons('');
+                                                        setSearchLessonTerm('');
+                                                        setCurrentLessonsPage(1);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-800 font-medium"
+                                                >
+                                                    ✖️ Wyczyść filtry
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -1159,7 +1418,12 @@ export default function CoursesManagementPage() {
                             <div>
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                                     <h2 className="text-2xl font-semibold text-gray-800">
-                                        Sale ({rooms.filter(room => !selectedLocationFilterRooms || room.lokalizacja === selectedLocationFilterRooms).length})
+                                        Sale ({rooms.filter(room => {
+                                            if (selectedLocationFilterRooms && room.lokalizacja !== selectedLocationFilterRooms) return false;
+                                            if (searchRoomNumber && !room.numer.toString().toLowerCase().includes(searchRoomNumber.toLowerCase())) return false;
+                                            if (minCapacity && (!room.ilosc_miejsc || room.ilosc_miejsc < parseInt(minCapacity))) return false;
+                                            return true;
+                                        }).length})
                                     </h2>
                                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <button
@@ -1193,8 +1457,8 @@ export default function CoursesManagementPage() {
 
                             
                                 <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex-1">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 📍 Filtruj po lokalizacji
                                             </label>
@@ -1211,51 +1475,107 @@ export default function CoursesManagementPage() {
                                                 ))}
                                             </select>
                                         </div>
-                                        {selectedLocationFilterRooms && (
-                                            <button
-                                                onClick={() => setSelectedLocationFilterRooms('')}
-                                                className="mt-6 text-sm text-orange-600 hover:text-orange-800 font-medium"
-                                            >
-                                                ✖️ Wyczyść filtr
-                                            </button>
-                                        )}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                🏠 Numer sali
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Szukaj po numerze..."
+                                                value={searchRoomNumber}
+                                                onChange={(e) => setSearchRoomNumber(e.target.value)}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                👥 Minimalna pojemność
+                                            </label>
+                                            <input
+                                                type="number"
+                                                placeholder="np. 20"
+                                                value={minCapacity}
+                                                onChange={(e) => setMinCapacity(e.target.value)}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                                min="1"
+                                            />
+                                        </div>
                                     </div>
+                                    {(selectedLocationFilterRooms || searchRoomNumber || minCapacity) && (
+                                        <div className="mt-4 flex justify-center">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedLocationFilterRooms('');
+                                                    setSearchRoomNumber('');
+                                                    setMinCapacity('');
+                                                }}
+                                                className="text-sm text-orange-600 hover:text-orange-800 font-medium px-4 py-2 bg-orange-50 rounded-lg hover:bg-orange-100 transition-all"
+                                            >
+                                                ✖️ Wyczyść wszystkie filtry
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                     {rooms
-                                        .filter(room => !selectedLocationFilterRooms || room.lokalizacja === selectedLocationFilterRooms)
+                                        .filter(room => {
+                                            
+                                            if (selectedLocationFilterRooms && room.lokalizacja !== selectedLocationFilterRooms) {
+                                                return false;
+                                            }
+                                            
+                                            if (searchRoomNumber && !room.numer.toString().toLowerCase().includes(searchRoomNumber.toLowerCase())) {
+                                                return false;
+                                            }
+                                            
+                                            if (minCapacity && (!room.ilosc_miejsc || room.ilosc_miejsc < parseInt(minCapacity))) {
+                                                return false;
+                                            }
+                                            return true;
+                                        })
                                         .map((room) => (
                                         <div
                                             key={room.id_sali}
                                             className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all overflow-hidden"
                                         >
                                             <div className="bg-gradient-to-r from-orange-500 to-red-600 p-4 text-center">
-                                                <h3 className="text-3xl font-bold text-white">
-                                                    {room.numer}
+                                                <h3 className="text-2xl font-bold text-white mb-1">
+                                                    Sala {room.numer}
                                                 </h3>
+                                                <p className="text-orange-100 text-sm">
+                                                    ID: {room.id_sali}
+                                                </p>
                                             </div>
                                             <div className="p-4">
-                                                <p className="text-center text-gray-600 mb-2">
-                                                    <span className="font-semibold">Lokalizacja:</span>{' '}
-                                                    {room.lokalizacja || 'Brak'}
-                                                </p>
-                                                <p className="text-center text-gray-600 mb-4">
-                                                    <span className="font-semibold">Pojemność:</span>{' '}
-                                                    {room.ilosc_miejsc || 'Brak'} osób
-                                                </p>
-                                                <div className="flex gap-2">
+                                                <div className="text-center mb-3">
+                                                    <div className="bg-gray-50 rounded-lg p-3 mb-2">
+                                                        <p className="text-sm text-gray-500 mb-1">Lokalizacja</p>
+                                                        <p className="font-semibold text-gray-800">
+                                                            📍 {room.lokalizacja || 'Nie określono'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-blue-50 rounded-lg p-3">
+                                                        <p className="text-sm text-blue-500 mb-1">Pojemność</p>
+                                                        <p className="font-semibold text-blue-800">
+                                                            👥 {room.ilosc_miejsc || 'Brak danych'} osób
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 mt-4">
                                                     <button
                                                         onClick={() => handleEditRoom(room)}
-                                                        className="flex-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-all font-medium"
+                                                        className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded-md hover:bg-blue-200 transition-all font-medium text-sm"
+                                                        title="Edytuj salę"
                                                     >
-                                                        ✏️
+                                                        ✏️ Edytuj
                                                     </button>
                                                     <button
                                                         onClick={() => openDeleteConfirm('room', room)}
-                                                        className="flex-1 bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200 transition-all font-medium"
+                                                        className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-md hover:bg-red-200 transition-all font-medium text-sm"
+                                                        title="Usuń salę"
                                                     >
-                                                        🗑️
+                                                        🗑️ Usuń
                                                     </button>
                                                 </div>
                                             </div>
@@ -1263,8 +1583,35 @@ export default function CoursesManagementPage() {
                                     ))}
                                 </div>
 
+                                
+                                {rooms.filter(room => {
+                                    if (selectedLocationFilterRooms && room.lokalizacja !== selectedLocationFilterRooms) return false;
+                                    if (searchRoomNumber && !room.numer.toString().toLowerCase().includes(searchRoomNumber.toLowerCase())) return false;
+                                    if (minCapacity && (!room.ilosc_miejsc || room.ilosc_miejsc < parseInt(minCapacity))) return false;
+                                    return true;
+                                }).length === 0 && rooms.length > 0 && (
+                                    <div className="text-center py-12 bg-white rounded-lg shadow">
+                                        <div className="text-6xl mb-4">🔍</div>
+                                        <p className="text-gray-500 text-lg mb-2">
+                                            Nie znaleziono sal spełniających kryteria filtrowania
+                                        </p>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedLocationFilterRooms('');
+                                                setSearchRoomNumber('');
+                                                setMinCapacity('');
+                                            }}
+                                            className="text-orange-600 hover:text-orange-800 font-medium"
+                                        >
+                                            ✖️ Wyczyść filtry
+                                        </button>
+                                    </div>
+                                )}
+
+                               
                                 {rooms.length === 0 && (
                                     <div className="text-center py-12 bg-white rounded-lg shadow">
+                                        <div className="text-6xl mb-4">🏫</div>
                                         <p className="text-gray-500 text-lg">
                                             Brak sal. Dodaj pierwszą salę!
                                         </p>
@@ -2117,6 +2464,12 @@ export default function CoursesManagementPage() {
                                             <li>Dnia tygodnia grupy</li>
                                             <li>Godziny zajęć grupy</li>
                                         </ul>
+                                        <div className="mt-3 p-2 bg-orange-100 rounded border-l-4 border-orange-400">
+                                            <p className="text-xs text-orange-800">
+                                                <strong>💡 Uwaga:</strong> Zajęcia będą utworzone BEZ przypisanej sali. 
+                                                Sale można przypisać później pojedynczo lub hurtowo.
+                                            </p>
+                                        </div>
                                     </div>
 
                                     <div className="flex gap-3">
@@ -2155,6 +2508,223 @@ export default function CoursesManagementPage() {
                                     </div>
                                     <p className={`text-lg font-medium ${bulkLessonSuccess.includes('❌') ? 'text-red-600' : 'text-green-600'}`}>
                                         {bulkLessonSuccess}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Modal zamknie się automatycznie...
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showBulkRoomModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                🏢 Zmiana sali dla wszystkich zajęć grupy
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            {!bulkRoomSuccess ? (
+                                <>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Wybierz grupę
+                                        </label>
+                                        <select
+                                            value={bulkRoomForm.id_grupa}
+                                            onChange={(e) => setBulkRoomForm({ ...bulkRoomForm, id_grupa: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            disabled={bulkRoomLoading}
+                                        >
+                                            <option value="">-- Wybierz grupę --</option>
+                                            {groups.map(group => {
+                                                const course = courses.find(c => c.id_kursu === group.Kurs_id_kursu);
+                                                const groupLessonsCount = lessons.filter(lesson => lesson.id_grupy === group.id_grupa).length;
+                                                return (
+                                                    <option key={group.id_grupa} value={group.id_grupa}>
+                                                        {course?.nazwa_kursu || 'Nieznany kurs'} (Grupa {group.id_grupa}) - {groupLessonsCount} zajęć
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Nowa sala
+                                        </label>
+                                        
+                                        
+                                        <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                        📍 Lokalizacja
+                                                    </label>
+                                                    <select
+                                                        value={bulkRoomLocationFilter}
+                                                        onChange={(e) => setBulkRoomLocationFilter(e.target.value)}
+                                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                        disabled={bulkRoomLoading}
+                                                    >
+                                                        <option value="">Wszystkie</option>
+                                                        {[...new Set(rooms.map(r => r.lokalizacja).filter(Boolean))].sort().map(loc => (
+                                                            <option key={loc} value={loc}>{loc}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                        👥 Min. pojemność
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="np. 20"
+                                                        value={bulkRoomCapacityFilter}
+                                                        onChange={(e) => setBulkRoomCapacityFilter(e.target.value)}
+                                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                        min="1"
+                                                        disabled={bulkRoomLoading}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                        🔍 Numer sali
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Szukaj..."
+                                                        value={bulkRoomSearchFilter}
+                                                        onChange={(e) => setBulkRoomSearchFilter(e.target.value)}
+                                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                        disabled={bulkRoomLoading}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {(bulkRoomLocationFilter || bulkRoomCapacityFilter || bulkRoomSearchFilter) && (
+                                                <div className="mt-2 text-center">
+                                                    <button
+                                                        onClick={() => {
+                                                            setBulkRoomLocationFilter('');
+                                                            setBulkRoomCapacityFilter('');
+                                                            setBulkRoomSearchFilter('');
+                                                        }}
+                                                        className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                                                        disabled={bulkRoomLoading}
+                                                    >
+                                                        ✖️ Wyczyść filtry
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <select
+                                            value={bulkRoomForm.Sala_id_sali}
+                                            onChange={(e) => setBulkRoomForm({ ...bulkRoomForm, Sala_id_sali: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            disabled={bulkRoomLoading}
+                                        >
+                                            <option value="">-- Wybierz salę --</option>
+                                            {rooms
+                                                .filter(room => {
+                                                    
+                                                    if (bulkRoomLocationFilter && room.lokalizacja !== bulkRoomLocationFilter) {
+                                                        return false;
+                                                    }
+                                                   
+                                                    if (bulkRoomCapacityFilter && (!room.ilosc_miejsc || room.ilosc_miejsc < parseInt(bulkRoomCapacityFilter))) {
+                                                        return false;
+                                                    }
+                                                   
+                                                    if (bulkRoomSearchFilter && !room.numer.toString().toLowerCase().includes(bulkRoomSearchFilter.toLowerCase())) {
+                                                        return false;
+                                                    }
+                                                    
+                                                    if (bulkRoomForm.id_grupa && isRoomOccupiedForGroup(room.id_sali, bulkRoomForm.id_grupa)) {
+                                                        return false;
+                                                    }
+                                                    return true;
+                                                })
+                                                .map(room => (
+                                                    <option key={room.id_sali} value={room.id_sali}>
+                                                        Sala {room.numer} - {room.lokalizacja} (Pojemność: {room.ilosc_miejsc}) ✅
+                                                    </option>
+                                                ))}
+                                        </select>
+                                        
+                                        
+                                        {rooms.filter(room => {
+                                            if (bulkRoomLocationFilter && room.lokalizacja !== bulkRoomLocationFilter) return false;
+                                            if (bulkRoomCapacityFilter && (!room.ilosc_miejsc || room.ilosc_miejsc < parseInt(bulkRoomCapacityFilter))) return false;
+                                            if (bulkRoomSearchFilter && !room.numer.toString().toLowerCase().includes(bulkRoomSearchFilter.toLowerCase())) return false;
+                                            if (bulkRoomForm.id_grupa && isRoomOccupiedForGroup(room.id_sali, bulkRoomForm.id_grupa)) return false;
+                                            return true;
+                                        }).length === 0 && (bulkRoomLocationFilter || bulkRoomCapacityFilter || bulkRoomSearchFilter || bulkRoomForm.id_grupa) && (
+                                            <p className="text-sm text-purple-600 mt-2">
+                                                🔍 {bulkRoomForm.id_grupa ? 
+                                                    'Nie znaleziono sal wolnych w przedziale 1.5h przed i po zajęciach grupy' : 
+                                                    'Nie znaleziono sal spełniających kryteria filtrowania'
+                                                }
+                                            </p>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="mb-4 p-4 bg-purple-50 rounded-lg">
+                                        <p className="text-sm text-purple-800">
+                                            <strong>⚠️ Uwaga:</strong><br/>
+                                            Ta operacja zmieni salę dla WSZYSTKICH istniejących zajęć wybranej grupy.
+                                            <br/>
+                                            <span className="text-purple-600 mt-1 block text-xs">
+                                                💡 Grupa musi mieć utworzone zajęcia, żeby można było zmienić salę.
+                                            </span>
+                                            <span className="text-green-700 mt-1 block text-xs">
+                                                🕒 Pokazywane są tylko sale wolne 1.5h przed i po zajęciach grupy.
+                                            </span>
+                                        </p>
+                                    </div>
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setShowBulkRoomModal(false);
+                                                setBulkRoomForm({ id_grupa: '', Sala_id_sali: '' });
+                                                setBulkRoomSuccess(null);
+                                                setBulkRoomLocationFilter('');
+                                                setBulkRoomCapacityFilter('');
+                                                setBulkRoomSearchFilter('');
+                                            }}
+                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all font-medium"
+                                            disabled={bulkRoomLoading}
+                                        >
+                                            Anuluj
+                                        </button>
+                                        <button
+                                            onClick={handleUpdateRoomForGroup}
+                                            disabled={!bulkRoomForm.id_grupa || !bulkRoomForm.Sala_id_sali || bulkRoomLoading}
+                                            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {bulkRoomLoading ? (
+                                                <span className="flex items-center justify-center">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    Zmieniam...
+                                                </span>
+                                            ) : (
+                                                '✨ Zmień salę'
+                                            )}
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center">
+                                    <div className="text-4xl mb-3">
+                                        {bulkRoomSuccess.includes('❌') ? '❌' : '✅'}
+                                    </div>
+                                    <p className={`text-lg font-medium ${bulkRoomSuccess.includes('❌') ? 'text-red-600' : 'text-green-600'}`}>
+                                        {bulkRoomSuccess}
                                     </p>
                                     <p className="text-sm text-gray-500 mt-2">
                                         Modal zamknie się automatycznie...

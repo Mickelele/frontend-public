@@ -420,7 +420,7 @@ export default function SemesterReportsPage() {
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-semibold">📊 Raport grupy #{selectedGroup}</h2>
-                            <div className="flex gap-3 no-print hidden">
+                            <div className="gap-3 no-print hidden sm:flex">
                                 <button
                                     onClick={exportGroupToCSV}
                                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
@@ -610,16 +610,16 @@ export default function SemesterReportsPage() {
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-semibold">📊 Raport ucznia</h2>
-                            <div className="flex gap-3 no-print">
+                            <div className="gap-3 no-print hidden sm:flex">
                                 <button
                                     onClick={exportStudentToCSV}
-                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 hidden"
+                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition items-center gap-2 hidden sm:flex"
                                 >
                                     📊 Eksportuj CSV
                                 </button>
                                 <button
                                     onClick={exportStudentToPDF}
-                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2 hidden"
+                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition items-center gap-2 hidden sm:flex"
                                 >
                                     📄 Eksportuj PDF
                                 </button>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getMyCourses } from "../../../../lib/api/course.api";
-import { getGroupHomeworks, addHomework, getHomeworkAnswers, gradeHomeworkAnswer } from "../../../../lib/api/course.api";
+import { getGroupHomeworks, addHomework, getHomeworkAnswers, gradeHomeworkAnswer, updateHomework, deleteHomework } from "../../../../lib/api/course.api";
 import { awardHomeworkPoints, revokeHomeworkPoints } from "../../../../lib/api/student-points.api";
 
 export default function TeacherHomeworkPage() {
@@ -18,6 +18,8 @@ export default function TeacherHomeworkPage() {
         visible: false,
         groupId: null,
         groupName: "",
+        editMode: false,
+        homeworkId: null,
         homeworkForm: {
             tytul: '',
             opis: '',
@@ -155,10 +157,27 @@ export default function TeacherHomeworkPage() {
             visible: true,
             groupId,
             groupName,
+            editMode: false,
+            homeworkId: null,
             homeworkForm: {
                 tytul: '',
                 opis: '',
                 termin: ''
+            }
+        });
+    };
+
+    const openEditHomeworkModal = (homework, groupId, groupName) => {
+        setHomeworkModal({
+            visible: true,
+            groupId,
+            groupName,
+            editMode: true,
+            homeworkId: homework.id_zadania,
+            homeworkForm: {
+                tytul: homework.tytul,
+                opis: homework.opis,
+                termin: homework.termin ? homework.termin.substring(0, 16) : ''
             }
         });
     };
@@ -168,6 +187,8 @@ export default function TeacherHomeworkPage() {
             visible: false,
             groupId: null,
             groupName: "",
+            editMode: false,
+            homeworkId: null,
             homeworkForm: {
                 tytul: '',
                 opis: '',
@@ -229,27 +250,57 @@ export default function TeacherHomeworkPage() {
         try {
             setAddingHomework(true);
 
-            const homeworkData = {
-                id_grupy: homeworkModal.groupId,
-                tytul: homeworkModal.homeworkForm.tytul,
-                opis: homeworkModal.homeworkForm.opis,
-                termin: homeworkModal.homeworkForm.termin
-            };
+            if (homeworkModal.editMode) {
+                
+                const homeworkData = {
+                    tytul: homeworkModal.homeworkForm.tytul.trim(),
+                    opis: homeworkModal.homeworkForm.opis.trim(),
+                    termin: homeworkModal.homeworkForm.termin
+                };
 
-            console.log('Wysyłane dane zadania:', homeworkData);
+                console.log('Aktualizowanie zadania:', homeworkData);
+                const result = await updateHomework(homeworkModal.homeworkId, homeworkData);
+                console.log('Zadanie zaktualizowane:', result);
+                
+                alert("Zadanie zostało zaktualizowane!");
+            } else {
+               
+                const homeworkData = {
+                    id_grupy: homeworkModal.groupId,
+                    tytul: homeworkModal.homeworkForm.tytul.trim(),
+                    opis: homeworkModal.homeworkForm.opis.trim(),
+                    termin: homeworkModal.homeworkForm.termin
+                };
 
-            const result = await addHomework(homeworkData);
-
-            console.log('Odpowiedź z API:', result);
+                console.log('Wysyłane dane zadania:', homeworkData);
+                const result = await addHomework(homeworkData);
+                console.log('Odpowiedź z API:', result);
+                
+                alert("Zadanie zostało dodane!");
+            }
 
             await loadGroupHomeworks(homeworkModal.groupId);
             closeHomeworkModal();
-            alert("Zadanie zostało dodane!");
         } catch (error) {
-            console.error("Błąd dodawania zadania:", error);
-            alert(`Wystąpił błąd podczas dodawania zadania: ${error.message}`);
+            console.error("Błąd", homeworkModal.editMode ? "aktualizacji" : "dodawania", "zadania:", error);
+            alert(`Wystąpił błąd podczas ${homeworkModal.editMode ? "aktualizacji" : "dodawania"} zadania: ${error.message}`);
         } finally {
             setAddingHomework(false);
+        }
+    };
+
+    const handleDeleteHomework = async (homework, groupId) => {
+        if (!confirm(`Czy na pewno chcesz usunąć zadanie "${homework.tytul}"?\nTa operacja jest nieodwracalna!`)) {
+            return;
+        }
+
+        try {
+            await deleteHomework(homework.id_zadania);
+            alert("Zadanie zostało usunięte!");
+            await loadGroupHomeworks(groupId);
+        } catch (error) {
+            console.error("Błąd usuwania zadania:", error);
+            alert(`Nie udało się usunąć zadania: ${error.message}`);
         }
     };
 
@@ -480,7 +531,7 @@ export default function TeacherHomeworkPage() {
                                             grupa={grupa}
                                             expanded={expandedGroups.has(grupa.id_grupa)}
                                             toggleGroup={() => handleGroupExpand(grupa.id_grupa)}
-                                            onAddHomework={() => openHomeworkModal(grupa.id_grupa, grupa.nazwa_grupy)}
+                                            onAddHomework={() => openHomeworkModal(grupa.id_grupa, `${course.nazwa_kursu} - Grupa #${grupa.id_grupa}`)}
                                             homeworks={groupHomeworks[grupa.id_grupa] || []}
                                             homeworkAnswers={homeworkAnswers}
                                             expandedHomeworks={expandedHomeworks}
@@ -503,7 +554,10 @@ export default function TeacherHomeworkPage() {
                             <div className="p-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-bold text-gray-800">
-                                        Dodaj zadanie dla grupy: {homeworkModal.groupName}
+                                        {homeworkModal.editMode 
+                                            ? `Edytuj zadanie dla grupy: ${homeworkModal.groupName}`
+                                            : `Dodaj zadanie dla grupy: ${homeworkModal.groupName}`
+                                        }
                                     </h3>
                                     <button
                                         onClick={closeHomeworkModal}
@@ -692,7 +746,7 @@ function GroupSection({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
                         </svg>
                         <div>
-                            <h3 className="font-semibold text-gray-800">Grupa: {grupa.nazwa_grupy}</h3>
+                            <h3 className="font-semibold text-gray-800">Grupa: #{grupa.id_grupa}</h3>
                             <p className="text-sm text-gray-600">
                                 Dzień: <b>{grupa.dzien_tygodnia}</b> |
                                 Godzina: <b>{formatTime(grupa.godzina)}</b> |
@@ -765,6 +819,26 @@ function GroupSection({
                                                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
                                                             ID: {homework.id_zadania}
                                                         </span>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openEditHomeworkModal(homework, grupa.id_grupa, `Grupa #${grupa.id_grupa}`);
+                                                            }}
+                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white p-1 rounded text-xs transition-colors"
+                                                            title="Edytuj zadanie"
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteHomework(homework, grupa.id_grupa);
+                                                            }}
+                                                            className="bg-red-500 hover:bg-red-600 text-white p-1 rounded text-xs transition-colors"
+                                                            title="Usuń zadanie"
+                                                        >
+                                                            🗑️
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
