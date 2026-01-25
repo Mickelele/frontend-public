@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '/context/AuthContext';
 import { getToken, getUserIdFromToken } from '/lib/auth';
 import { getMyProfile, updateMyProfile, changePassword } from '/lib/api/users.api';
-import { getStudentById, updateStudent } from '/lib/api/student.api';
+import { getStudentById, updateStudent, changePseudonim } from '/lib/api/student.api';
 import { getTeacherById, updateTeacher } from '/lib/api/teacher.api';
 import { getGuardianById, updateGuardian } from '/lib/api/guardian.api';
 
@@ -165,7 +165,9 @@ export default function ProfilePage() {
             }
             
             if (user.rola === 'uczen') {
-                await updateStudent(userId, { pseudonim: formData.pseudonim });
+                if (formData.pseudonim !== roleData.pseudonim) {
+                    await changePseudonim(userId, formData.pseudonim);
+                }
                 alert('Dane zostały zaktualizowane!');
             } else if (user.rola === 'nauczyciel') {
                 await updateTeacher(userId, { nr_konta_bankowego: formData.nr_konta_bankowego });

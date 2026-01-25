@@ -28,10 +28,23 @@ export default function Navbar({ isSidebarOpen, setIsSidebarOpen }) {
         return roles[role] || role;
     };
 
+    const getFirstDashboardRoute = (role) => {
+        const firstRoutes = {
+            'administrator': '/dashboard/administrator/users',
+            'nauczyciel': '/dashboard/nauczyciel/attendance',
+            'opiekun': '/dashboard/opiekun',
+            'uczen': '/dashboard/uczen'
+        };
+        return firstRoutes[role] || '/dashboard';
+    };
+
     return (
         <nav className="w-full bg-orange-500 shadow-xl p-6 flex items-center justify-between">
             <div className="flex items-center space-x-8">
-                <Link href="/" className="flex items-center hover:scale-105 transition-transform">
+                <Link 
+                    href={user ? getFirstDashboardRoute(user.role) : "/"} 
+                    className="flex items-center hover:scale-105 transition-transform"
+                >
                     <Image 
                         src={logo} 
                         alt="Logo" 

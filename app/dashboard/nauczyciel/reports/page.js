@@ -5,6 +5,7 @@ import { getMyCourses } from '../../../../lib/api/course.api';
 import { getGroupById } from '../../../../lib/api/group.api';
 import { getStudentsByGroup } from '../../../../lib/api/student.api';
 import { getDetailedReport } from '../../../../lib/api/reports.api';
+import { getQuizzesByGroup, getQuizResultsByQuiz, getQuestionsByQuiz } from '../../../../lib/api/quiz.api';
 import { getCourseById } from '../../../../lib/api/course.api';
 import { getUserIdFromToken } from '../../../../lib/auth';
 
@@ -107,6 +108,89 @@ export default function SemesterReportsPage() {
         setGenerating(true);
         try {
             const report = await getDetailedReport({ studentId });
+            console.log('Report z getDetailedReport:', report);
+            
+            try {
+                const groupQuizzes = await getQuizzesByGroup(selectedGroup);
+                console.log('Quizy grupy:', groupQuizzes);
+                const allQuizResults = [];
+                
+               
+                if (Array.isArray(groupQuizzes) && groupQuizzes.length > 0) {
+                    for (const quiz of groupQuizzes) {
+                        try {
+                            const quizResults = await getQuizResultsByQuiz(quiz.id_quizu);
+                            console.log(`Wyniki dla quizu ${quiz.id_quizu}:`, quizResults);
+                            if (Array.isArray(quizResults)) {
+                                
+                                const studentResults = quizResults.filter(r => r.Uczen_id_ucznia === studentId);
+                               
+                                const enrichedResults = studentResults.map(r => ({
+                                    ...r,
+                                    quiz: { nazwa: quiz.nazwa, id_quizu: quiz.id_quizu }
+                                }));
+                                console.log(`Wyniki dla ucznia ${studentId} w quizie ${quiz.id_quizu}:`, enrichedResults);
+                                allQuizResults.push(...enrichedResults);
+                            }
+                        } catch (err) {
+                            console.error(`Błąd pobierania wyników dla quizu ${quiz.id_quizu}:`, err);
+                        }
+                    }
+                }
+                
+                console.log('Wszystkie wyniki dla ucznia:', allQuizResults);
+                
+                
+                const uniqueQuizzes = new Set(allQuizResults.map(r => r.Quiz_id_quizu));
+                const totalQuizzes = uniqueQuizzes.size;
+                
+               
+                let totalPercentage = 0;
+                const enrichedWithPercentage = await Promise.all(
+                    allQuizResults.map(async (result) => {
+                        try {
+                            const questions = await getQuestionsByQuiz(result.Quiz_id_quizu);
+                            const maxPoints = questions.reduce((sum, q) => sum + (q.ilosc_punktow || 1), 0);
+                            const percentage = maxPoints > 0 ? Math.round((result.wynik / maxPoints) * 100) : 0;
+                            totalPercentage += percentage;
+                            return { ...result, maxPoints, percentage };
+                        } catch (err) {
+                            console.error(`Błąd pobierania pytań dla quizu ${result.Quiz_id_quizu}:`, err);
+                            return { ...result, maxPoints: 1, percentage: result.wynik };
+                        }
+                    })
+                );
+                
+                const averageScore = allQuizResults.length > 0 ? Math.round(totalPercentage / allQuizResults.length) : 0;
+                
+                report.quiz = {
+                    ...report.quiz,
+                    totalQuizzes: totalQuizzes,
+                    averageScore: averageScore,
+                    results: enrichedWithPercentage
+                };
+
+                
+                report.summary = {
+                    ...report.summary,
+                    averageQuizScore: averageScore,
+                    totalQuizzes: totalQuizzes
+                };
+                console.log('Updated quiz stats:', { totalQuizzes, averageScore });
+            } catch (err) {
+                console.error('Błąd pobierania wyników quizów ucznia:', err);
+                report.quiz = {
+                    totalQuizzes: 0,
+                    averageScore: 0,
+                    results: []
+                };
+                report.summary = {
+                    ...report.summary,
+                    averageQuizScore: 0,
+                    totalQuizzes: 0
+                };
+            }
+
             setSelectedStudentReport({ studentId, report });
         } catch (err) {
             console.error('Błąd generowania raportu ucznia:', err);
@@ -468,9 +552,9 @@ export default function SemesterReportsPage() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-gray-600">Średnia z quizów</p>
-                                        <p className="text-3xl font-bold text-purple-600">{groupReport.summary.averageQuizScore.toFixed(2)}</p>
+                                        <p className="text-3xl font-bold text-purple-600">{groupReport.summary?.averageQuizScore?.toFixed(2) || '0.00'}</p>
                                         <p className="text-xs text-gray-500 mt-1">
-                                            {groupReport.quiz.totalQuizzes} quizów
+                                            {groupReport.quiz?.totalQuizzes || 0} quizów
                                         </p>
                                     </div>
                                     <div className="text-4xl">🎯</div>
@@ -534,7 +618,7 @@ export default function SemesterReportsPage() {
                                 </div>
                                 <div className="bg-green-50 p-4 rounded-lg">
                                     <p className="text-sm text-gray-600">Średni wynik</p>
-                                    <p className="text-2xl font-bold text-green-600">{groupReport.quiz.averageScore.toFixed(2)}%</p>
+                                    <p className="text-2xl font-bold text-green-600">{groupReport.quiz?.averageScore?.toFixed(2) || '0.00'}%</p>
                                 </div>
                             </div>
                         </div>
@@ -674,9 +758,9 @@ export default function SemesterReportsPage() {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-sm text-gray-600">Średnia z quizów</p>
-                                                    <p className="text-3xl font-bold text-purple-600">{report.summary.averageQuizScore.toFixed(2)}</p>
+                                                    <p className="text-3xl font-bold text-purple-600">{report.summary?.averageQuizScore || 0}</p>
                                                     <p className="text-xs text-gray-500 mt-1">
-                                                        {report.quiz.totalQuizzes} quizów
+                                                        {report.quiz?.totalQuizzes || 0} quizów
                                                     </p>
                                                 </div>
                                                 <div className="text-4xl">🎯</div>
@@ -740,7 +824,7 @@ export default function SemesterReportsPage() {
                                             </div>
                                             <div className="bg-green-50 p-4 rounded-lg">
                                                 <p className="text-sm text-gray-600">Średni wynik</p>
-                                                <p className="text-2xl font-bold text-green-600">{report.quiz.averageScore.toFixed(2)}%</p>
+                                                <p className="text-2xl font-bold text-green-600">{report.quiz?.averageScore || 0}%</p>
                                             </div>
                                         </div>
                                     </div>

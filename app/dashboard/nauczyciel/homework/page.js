@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getMyCourses } from "../../../../lib/api/course.api";
-import { getGroupHomeworks, addHomework, getHomeworkAnswers, gradeHomeworkAnswer, updateHomework, deleteHomework } from "../../../../lib/api/course.api";
+import { useEffect, useState, useCallback } from "react";
+import { getMyCourses, getGroupHomeworks, addHomework, getHomeworkAnswers, gradeHomeworkAnswer, updateHomework, deleteHomework } from "../../../../lib/api/course.api";
 import { awardHomeworkPoints, revokeHomeworkPoints } from "../../../../lib/api/student-points.api";
 
 export default function TeacherHomeworkPage() {
@@ -41,6 +40,74 @@ export default function TeacherHomeworkPage() {
     const [groupHomeworks, setGroupHomeworks] = useState({});
     const [homeworkAnswers, setHomeworkAnswers] = useState({});
 
+    // Helper functions defined first to avoid dependency issues
+    const loadGroupHomeworks = useCallback(async (groupId) => {
+        try {
+            const homeworks = await getGroupHomeworks(groupId);
+            console.log(`Pobrane zadania dla grupy ${groupId}:`, homeworks);
+
+            setGroupHomeworks(prev => ({
+                ...prev,
+                [groupId]: homeworks || []
+            }));
+
+            if (homeworks && homeworks.length > 0) {
+                for (const homework of homeworks) {
+                    try {
+                        const answers = await getHomeworkAnswers(homework.id_zadania);
+                        setHomeworkAnswers(prev => ({
+                            ...prev,
+                            [homework.id_zadania]: answers || []
+                        }));
+                    } catch (answerError) {
+                        console.error(`Błąd pobierania odpowiedzi dla zadania ${homework.id_zadania}:`, answerError);
+                        setHomeworkAnswers(prev => ({
+                            ...prev,
+                            [homework.id_zadania]: []
+                        }));
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Błąd pobierania zadań:", error);
+            setGroupHomeworks(prev => ({
+                ...prev,
+                [groupId]: []
+            }));
+        }
+    }, []);
+
+    // Handler functions defined using useCallback to ensure stable references
+    const openEditHomeworkModal = useCallback((homework, groupId, groupName) => {
+        setHomeworkModal({
+            visible: true,
+            groupId,
+            groupName,
+            editMode: true,
+            homeworkId: homework.id_zadania,
+            homeworkForm: {
+                tytul: homework.tytul,
+                opis: homework.opis,
+                termin: homework.termin ? homework.termin.substring(0, 16) : ''
+            }
+        });
+    }, []);
+
+    const handleDeleteHomework = useCallback(async (homework, groupId) => {
+        if (!confirm(`Czy na pewno chcesz usunąć zadanie "${homework.tytul}"?\nTa operacja jest nieodwracalna!`)) {
+            return;
+        }
+
+        try {
+            await deleteHomework(homework.id_zadania);
+            alert("Zadanie zostało usunięte!");
+            await loadGroupHomeworks(groupId);
+        } catch (error) {
+            console.error("Błąd usuwania zadania:", error);
+            alert(`Nie udało się usunąć zadania: ${error.message}`);
+        }
+    }, [loadGroupHomeworks]);
+
     
     const calculateHomeworkPoints = (grade) => {
         if (grade >= 80) return 5;     
@@ -48,7 +115,7 @@ export default function TeacherHomeworkPage() {
         if (grade >= 40) return 3;      
         if (grade >= 20) return 2;      
         if (grade > 0) return 1;        
-        return 0;                       
+        return 0;
     };
 
     const dniTygodnia = [
@@ -98,24 +165,6 @@ export default function TeacherHomeworkPage() {
         });
     };
 
-    const loadGroupHomeworks = async (groupId) => {
-        try {
-            const homeworks = await getGroupHomeworks(groupId);
-            console.log(`Pobrane zadania dla grupy ${groupId}:`, homeworks);
-
-            setGroupHomeworks(prev => ({
-                ...prev,
-                [groupId]: homeworks || []
-            }));
-        } catch (error) {
-            console.error("Błąd pobierania zadań:", error);
-            setGroupHomeworks(prev => ({
-                ...prev,
-                [groupId]: []
-            }));
-        }
-    };
-
     const loadHomeworkAnswers = async (homeworkId) => {
         try {
             const answers = await getHomeworkAnswers(homeworkId);
@@ -163,21 +212,6 @@ export default function TeacherHomeworkPage() {
                 tytul: '',
                 opis: '',
                 termin: ''
-            }
-        });
-    };
-
-    const openEditHomeworkModal = (homework, groupId, groupName) => {
-        setHomeworkModal({
-            visible: true,
-            groupId,
-            groupName,
-            editMode: true,
-            homeworkId: homework.id_zadania,
-            homeworkForm: {
-                tytul: homework.tytul,
-                opis: homework.opis,
-                termin: homework.termin ? homework.termin.substring(0, 16) : ''
             }
         });
     };
@@ -286,21 +320,6 @@ export default function TeacherHomeworkPage() {
             alert(`Wystąpił błąd podczas ${homeworkModal.editMode ? "aktualizacji" : "dodawania"} zadania: ${error.message}`);
         } finally {
             setAddingHomework(false);
-        }
-    };
-
-    const handleDeleteHomework = async (homework, groupId) => {
-        if (!confirm(`Czy na pewno chcesz usunąć zadanie "${homework.tytul}"?\nTa operacja jest nieodwracalna!`)) {
-            return;
-        }
-
-        try {
-            await deleteHomework(homework.id_zadania);
-            alert("Zadanie zostało usunięte!");
-            await loadGroupHomeworks(groupId);
-        } catch (error) {
-            console.error("Błąd usuwania zadania:", error);
-            alert(`Nie udało się usunąć zadania: ${error.message}`);
         }
     };
 
@@ -537,6 +556,8 @@ export default function TeacherHomeworkPage() {
                                             expandedHomeworks={expandedHomeworks}
                                             onHomeworkExpand={handleHomeworkExpand}
                                             onOpenGradeModal={openGradeModal}
+                                            onEditHomework={openEditHomeworkModal}
+                                            onDeleteHomework={handleDeleteHomework}
                                             formatDate={formatDate}
                                             formatTime={formatTime}
                                             formatDateTime={formatDateTime}
@@ -725,6 +746,8 @@ function GroupSection({
                           expandedHomeworks,
                           onHomeworkExpand,
                           onOpenGradeModal,
+                          onEditHomework,
+                          onDeleteHomework,
                           formatDate,
                           formatTime,
                           formatDateTime
@@ -822,7 +845,7 @@ function GroupSection({
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                openEditHomeworkModal(homework, grupa.id_grupa, `Grupa #${grupa.id_grupa}`);
+                                                                onEditHomework(homework, grupa.id_grupa, `Grupa #${grupa.id_grupa}`);
                                                             }}
                                                             className="bg-yellow-500 hover:bg-yellow-600 text-white p-1 rounded text-xs transition-colors"
                                                             title="Edytuj zadanie"
@@ -832,7 +855,7 @@ function GroupSection({
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                handleDeleteHomework(homework, grupa.id_grupa);
+                                                                onDeleteHomework(homework, grupa.id_grupa);
                                                             }}
                                                             className="bg-red-500 hover:bg-red-600 text-white p-1 rounded text-xs transition-colors"
                                                             title="Usuń zadanie"
