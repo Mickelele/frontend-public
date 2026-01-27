@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { getMyCourses, getGroupHomeworks, addHomework, getHomeworkAnswers, gradeHomeworkAnswer, updateHomework, deleteHomework } from "../../../../lib/api/course.api";
 import { awardHomeworkPoints, revokeHomeworkPoints } from "../../../../lib/api/student-points.api";
+import PageHeader from '../../../../components/PageHeader';
 
 export default function TeacherHomeworkPage() {
     const [courses, setCourses] = useState([]);
@@ -442,13 +443,13 @@ export default function TeacherHomeworkPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 relative">
-            <div className="max-w-7xl mx-auto">
-
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800">Zadania domowe - Moje grupy</h1>
-                    <p className="text-gray-600 mt-2">Przeglądaj zadania, odpowiedzi i oceniaj</p>
-                </header>
+        <>
+            <PageHeader 
+                title="📝 Zadania domowe - Moje grupy"
+                description="Przeglądaj zadania, odpowiedzi i oceniaj"
+            />
+            <div className="min-h-screen bg-gray-50 p-6 relative">
+                <div className="max-w-7xl mx-auto">
 
                 <div className="mb-8">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -966,5 +967,6 @@ function GroupSection({
                 </div>
             )}
         </div>
+        </>
     );
 }

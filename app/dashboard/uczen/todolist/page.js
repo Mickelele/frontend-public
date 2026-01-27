@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '/context/AuthContext';
+import PageHeader from '../../../../components/PageHeader';
 import '/styles/todolist.css';
 import {
     getStudentTaskLists,
@@ -278,10 +279,10 @@ export default function TodoListPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">📝 Moja Lista ToDo</h1>
-                    <p className="text-gray-600">Organizuj swoje zadania i bądź produktywny!</p>
-                </div>
+                <PageHeader 
+                    title="📝 Moja Lista ToDo" 
+                    description="Organizuj swoje zadania i bądź produktywny!" 
+                />
 
                 {error && (
                     <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">

@@ -3,28 +3,28 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import '../styles/global.css';
 import Navbar from '/components/Navbar';
+import Breadcrumb from '/components/Breadcrumb';
 import Sidebar from '/app/dashboard/shared_components/components/SideBar';
-import { AuthProvider } from '/context/AuthContext';
+import { AuthProvider, useAuth } from '/context/AuthContext';
 
-export default function RootLayout({ children }) {
+function LayoutContent({ children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const pathname = usePathname();
+    const { user } = useAuth();
     
-   
     const hideNavbar = pathname?.startsWith('/auth');
 
     return (
-        <html lang="pl">
-        <body>
-        <AuthProvider>
+        <>
             {!hideNavbar && (
                 <Navbar
                     isSidebarOpen={isSidebarOpen}
                     setIsSidebarOpen={setIsSidebarOpen}
                 />
             )}
+            <Breadcrumb />
             <main className={`min-h-screen bg-gray-50 transition-all duration-300 ease-in-out ${
-                isSidebarOpen ? 'ml-64' : 'ml-0'
+                isSidebarOpen && user ? 'ml-64' : 'ml-0'
             }`}>
                 {children}
             </main>
@@ -32,6 +32,16 @@ export default function RootLayout({ children }) {
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
             />
+        </>
+    );
+}
+
+export default function RootLayout({ children }) {
+    return (
+        <html lang="pl">
+        <body>
+        <AuthProvider>
+            <LayoutContent>{children}</LayoutContent>
         </AuthProvider>
         </body>
         </html>

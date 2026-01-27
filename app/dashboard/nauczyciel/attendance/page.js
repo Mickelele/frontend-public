@@ -11,6 +11,7 @@ import { getSubstitutesByTeacherReporting, getSubstitutesByTeacherSubstituting }
 import { getGroupById, getGroupStudents } from "../../../../lib/api/group.api";
 import { getUserById } from "../../../../lib/api/users.api";
 import { awardAttendancePoint, revokeAttendancePoint, penalizeForRemark } from "../../../../lib/api/student-points.api";
+import PageHeader from '../../../../components/PageHeader';
 
 export default function TeacherCoursesPage() {
     const router = useRouter();

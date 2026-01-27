@@ -9,6 +9,7 @@ import { getCourses, getCourseGroups } from '/lib/api/course.api';
 import { createUser, getUserById, updateUser, deleteUser } from '/lib/api/users.api';
 import { adjustStudentCount } from '/lib/api/group.api';
 import { updateStudentPoints, getStudentPoints } from '/lib/api/student-points.api';
+import PageHeader from '../../../../components/PageHeader';
 
 export default function UsersManagement() {
     const { user } = useAuth();
@@ -570,12 +571,13 @@ export default function UsersManagement() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">👥 Zarządzanie Użytkownikami</h1>
-                    <p className="text-gray-600">Twórz, edytuj i zarządzaj użytkownikami systemu</p>
-                </div>
+        <>
+            <PageHeader 
+                title="👥 Zarządzanie Użytkownikami"
+                description="Twórz, edytuj i zarządzaj użytkownikami systemu"
+            />
+            <div className="min-h-screen bg-gray-50 p-6">
+                <div className="max-w-7xl mx-auto">
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded-lg shadow-md p-6">
@@ -1444,5 +1446,6 @@ export default function UsersManagement() {
                 </div>
             )}
         </div>
+        </>
     );
 }

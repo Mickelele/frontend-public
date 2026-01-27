@@ -8,6 +8,7 @@ import { getDetailedReport } from '../../../../lib/api/reports.api';
 import { getQuizzesByGroup, getQuizResultsByQuiz, getQuestionsByQuiz } from '../../../../lib/api/quiz.api';
 import { getCourseById } from '../../../../lib/api/course.api';
 import { getUserIdFromToken } from '../../../../lib/auth';
+import PageHeader from '../../../../components/PageHeader';
 
 export default function SemesterReportsPage() {
     const [groups, setGroups] = useState([]);
@@ -415,9 +416,14 @@ export default function SemesterReportsPage() {
                     }
                 }
             `}</style>
+            
+            <PageHeader 
+                title="📊 Raporty semestralne"
+                description="Generuj szczegółowe raporty dla grup i poszczególnych uczniów"
+            />
+            
             <div className="min-h-screen bg-gray-50 p-6">
                 <div className="max-w-7xl mx-auto">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6 no-print">📊 Raporty semestralne</h1>
 
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
                     <h2 className="text-xl font-semibold mb-4">Wybierz grupę</h2>

@@ -4,6 +4,7 @@ import { useAuth } from '/context/AuthContext';
 import { getHomeworksForGroupWithAnswers, submitHomeworkAnswer } from '/lib/api/homework.api';
 import { getStudentById } from '/lib/api/student.api';
 import { getUserIdFromToken } from '/lib/auth';
+import PageHeader from '../../../../components/PageHeader';
 
 export default function GradesPage() {
     const { user } = useAuth();
@@ -184,13 +185,13 @@ export default function GradesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-            <div className="max-w-7xl mx-auto">
-              
-                <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg shadow-lg p-4 md:p-6 mb-4 md:mb-6">
-                    <h1 className="text-2xl md:text-3xl font-bold mb-2">📚 Moje oceny i zadania</h1>
-                    <p className="text-purple-100 text-sm md:text-base">Przeglądaj swoje prace domowe i oceny</p>
-                </div>
+        <>
+            <PageHeader 
+                title="📚 Moje oceny i zadania"
+                description="Przeglądaj swoje prace domowe i oceny"
+            />
+            <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+                <div className="max-w-7xl mx-auto">
 
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -471,5 +472,6 @@ export default function GradesPage() {
                 </div>
             )}
         </div>
+        </>
     );
 }

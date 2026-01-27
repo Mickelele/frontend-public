@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PageHeader from '../../../../components/PageHeader';
 import { getDetailedReport } from '../../../../lib/api/reports.api';
 import { getUserIdFromToken } from '../../../../lib/auth';
 
@@ -129,9 +130,11 @@ export default function StudentReportPage() {
             `}</style>
             <div className="min-h-screen bg-gray-50 p-4 md:p-6">
                 <div className="max-w-6xl mx-auto">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 md:mb-6">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">📊 Mój raport semestralny</h1>
-                        <div className="hidden min-[500px]:flex gap-3 no-print">
+                    <PageHeader 
+                        title="📊 Mój raport semestralny" 
+                        description="Przeglądaj swoje osiągnięcia i postępy w nauce"
+                        actions={
+                            <div className="hidden min-[500px]:flex gap-3 no-print">
                             <button
                                 onClick={exportToCSV}
                                 className="bg-green-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm md:text-base"
@@ -145,7 +148,8 @@ export default function StudentReportPage() {
                                 📄 Eksportuj PDF
                             </button>
                         </div>
-                    </div>
+                        }
+                    />
 
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

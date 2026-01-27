@@ -11,6 +11,7 @@ import { getHomeworksForGroupWithAnswers } from '/lib/api/homework.api';
 import { getStudentTasks, TASK_STATUS } from '/lib/api/todo.api';
 import { getUserIdFromToken } from '/lib/auth';
 import Link from 'next/link';
+import PageHeader from '../../../components/PageHeader';
 
 export default function StudentDashboard() {
     const { user } = useAuth();

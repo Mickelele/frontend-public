@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import PageHeader from '../../../../components/PageHeader';
 import { 
     getQuizzesByGroup, 
     getQuizResultsByStudent, 
@@ -233,15 +234,10 @@ export default function StudentQuizzesPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
             <div className="max-w-7xl mx-auto">
-                <div className="mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                Moje Quizy
-                            </h1>
-                            <p className="text-gray-600 mt-2">Sprawdź swoją wiedzę i zdobywaj punkty</p>
-                        </div>
-                        
+                <PageHeader 
+                    title="🧠 Moje Quizy" 
+                    description="Sprawdź swoją wiedzę i zdobywaj punkty"
+                    actions={
                         <div className="hidden md:flex gap-4">
                             <div className="bg-white rounded-xl shadow-md px-6 py-4 text-center">
                                 <div className="text-2xl font-bold text-blue-600">{quizzes.length}</div>

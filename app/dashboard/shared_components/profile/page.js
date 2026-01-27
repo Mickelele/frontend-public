@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '/context/AuthContext';
+import PageHeader from '../../../../components/PageHeader';
 import { getToken, getUserIdFromToken } from '/lib/auth';
 import { getMyProfile, updateMyProfile, changePassword } from '/lib/api/users.api';
 import { getStudentById, updateStudent, changePseudonim } from '/lib/api/student.api';
@@ -204,9 +205,13 @@ export default function ProfilePage() {
     const canEdit = true;
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-gradient-to-b from-gray-50 to-gray-200 p-6">
-            <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-lg">
-                <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">Twój profil</h1>
+        <>
+            <PageHeader 
+                title="📝 Twój profil" 
+                description="Zarządzaj swoimi danymi osobowymi i ustawieniami konta" 
+            />
+            <div className="min-h-screen flex justify-center items-center bg-gradient-to-b from-gray-50 to-gray-200 p-6">
+                <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-lg">
 
                 <div className="flex flex-col items-center">
                     {preview ? (
@@ -474,5 +479,6 @@ export default function ProfilePage() {
                 </div>
             </div>
         </div>
+        </>
     );
 }

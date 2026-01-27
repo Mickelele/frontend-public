@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useAuth } from '/context/AuthContext';
+import PageHeader from '../../../../components/PageHeader';
 import { getAllPrizes, getStudentPrizes, claimPrize, getPrizeImageUrl } from '/lib/api/prize.api';
 import { getStudentPoints } from '/lib/api/points.api';
 
@@ -105,13 +106,10 @@ export default function PrizesPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-6">
             <div className="max-w-7xl mx-auto">
-         
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-lg p-4 md:p-6 mb-4 md:mb-6">
-                    <div className="text-center">
-                        <h1 className="text-2xl md:text-3xl font-bold mb-2">⭐ Sklep z nagrodami</h1>
-                        <p className="text-blue-100 text-sm md:text-base">Wymień swoje punkty na fantastyczne nagrody!</p>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="⭐ Sklep z nagrodami" 
+                    description="Wymień swoje punkty na fantastyczne nagrody!" 
+                />
 
                
                 <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
