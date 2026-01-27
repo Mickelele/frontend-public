@@ -56,12 +56,12 @@ export default function StudentQuizzesPage() {
             if (studentData?.id_grupa) {
                 setGroupId(studentData.id_grupa);
             } else {
-                setError('Nie jesteś przypisany do żadnej grupy');
+                setError('Nie jestes przypisany do zadnej grupy');
                 setLoading(false);
             }
         } catch (err) {
-            console.error('Błąd ładowania danych ucznia:', err);
-            setError('Nie udało się załadować danych ucznia');
+            console.error('Blad ladowania danych ucznia:', err);
+            setError('Nie udalo sie zaladowac danych ucznia');
             setLoading(false);
         }
     };
@@ -99,8 +99,8 @@ export default function StudentQuizzesPage() {
             setQuizzes(filteredQuizzes);
             setError(null);
         } catch (err) {
-            console.error('Błąd ładowania quizów:', err);
-            setError('Nie udało się załadować quizów');
+            console.error('Blad ladowania quizow:', err);
+            setError('Nie udalo sie zaladowac quizow');
         } finally {
             setLoading(false);
         }
@@ -247,7 +247,7 @@ export default function StudentQuizzesPage() {
                                 <div className="text-2xl font-bold text-green-600">
                                     {Object.keys(quizResults).length}
                                 </div>
-                                <div className="text-xs text-gray-600 uppercase tracking-wide">Rozwiązane</div>
+                                <div className="text-xs text-gray-600 uppercase tracking-wide">Rozwiazane</div>
                             </div>
                             <div className="bg-white rounded-xl shadow-md px-6 py-4 text-center">
                                 <div className="text-2xl font-bold text-purple-600">

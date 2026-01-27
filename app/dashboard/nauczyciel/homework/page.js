@@ -61,7 +61,7 @@ export default function TeacherHomeworkPage() {
                             [homework.id_zadania]: answers || []
                         }));
                     } catch (answerError) {
-                        console.error(`Błąd pobierania odpowiedzi dla zadania ${homework.id_zadania}:`, answerError);
+                        console.error(`Blad pobierania odpowiedzi dla zadania ${homework.id_zadania}:`, answerError);
                         setHomeworkAnswers(prev => ({
                             ...prev,
                             [homework.id_zadania]: []
@@ -70,7 +70,7 @@ export default function TeacherHomeworkPage() {
                 }
             }
         } catch (error) {
-            console.error("Błąd pobierania zadań:", error);
+            console.error("Blad pobierania zadan:", error);
             setGroupHomeworks(prev => ({
                 ...prev,
                 [groupId]: []
@@ -95,13 +95,13 @@ export default function TeacherHomeworkPage() {
     }, []);
 
     const handleDeleteHomework = useCallback(async (homework, groupId) => {
-        if (!confirm(`Czy na pewno chcesz usunąć zadanie "${homework.tytul}"?\nTa operacja jest nieodwracalna!`)) {
+        if (!confirm(`Czy na pewno chcesz usunac zadanie "${homework.tytul}"?\nTa operacja jest nieodwracalna!`)) {
             return;
         }
 
         try {
             await deleteHomework(homework.id_zadania);
-            alert("Zadanie zostało usunięte!");
+            alert("Zadanie zostalo usuniete!");
             await loadGroupHomeworks(groupId);
         } catch (error) {
             console.error("Błąd usuwania zadania:", error);
