@@ -23,7 +23,9 @@ export default function RootLayout({ children }) {
                     setIsSidebarOpen={setIsSidebarOpen}
                 />
             )}
-            <main className="min-h-screen bg-gray-50">
+            <main className={`min-h-screen bg-gray-50 transition-all duration-300 ease-in-out ${
+                isSidebarOpen ? 'ml-64' : 'ml-0'
+            }`}>
                 {children}
             </main>
             <Sidebar
