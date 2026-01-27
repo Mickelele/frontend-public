@@ -725,6 +725,7 @@ export default function TeacherHomeworkPage() {
                 )}
             </div>
         </div>
+        </>
     );
 }
 

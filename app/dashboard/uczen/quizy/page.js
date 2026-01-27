@@ -265,11 +265,11 @@ export default function StudentQuizzesPage() {
                             <div className={`p-2 rounded-xl ${progressTrend.isImproving ? 'bg-green-100' : 'bg-orange-100'}`}>
                                 {progressTrend.isImproving ? (
                                     <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L10 4.414 4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd"/>
+                                        <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L10 4.414 4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
                                     </svg>
                                 ) : (
                                     <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L10 15.586l5.293-5.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                        <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L10 15.586l5.293-5.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
                                     </svg>
                                 )}
                             </div>
