@@ -256,8 +256,8 @@ export default function StudentQuizzesPage() {
                                 <div className="text-xs text-gray-600 uppercase tracking-wide">Do zrobienia</div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    }
+                />
 
                 {progressTrend && (
                     <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">

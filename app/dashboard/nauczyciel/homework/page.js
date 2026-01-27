@@ -5,7 +5,7 @@ import { getMyCourses, getGroupHomeworks, addHomework, getHomeworkAnswers, grade
 import { awardHomeworkPoints, revokeHomeworkPoints } from "../../../../lib/api/student-points.api";
 import PageHeader from '../../../../components/PageHeader';
 
-export default function TeacherHomeworkPage() {
+function TeacherHomeworkPage() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedDay, setSelectedDay] = useState("");
@@ -443,7 +443,7 @@ export default function TeacherHomeworkPage() {
     }
 
     return (
-        <>
+        <div>
             <PageHeader 
                 title="📝 Zadania domowe - Moje grupy"
                 description="Przeglądaj zadania, odpowiedzi i oceniaj"
@@ -722,10 +722,10 @@ export default function TeacherHomeworkPage() {
                             </div>
                         </div>
                     </div>
-                )}
+                )}  
             </div>
         </div>
-        </>
+        </div>
     );
 }
 
@@ -968,6 +968,7 @@ function GroupSection({
                 </div>
             )}
         </div>
-        </>
     );
 }
+
+export default TeacherHomeworkPage;
