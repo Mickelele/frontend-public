@@ -1,6 +1,6 @@
 'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
-import { getCurrentUser, logout as authLogout } from '/lib/auth';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { getCurrentUser, logout as authLogout, getToken, setToken } from '/lib/auth';
 
 const AuthContext = createContext();
 
@@ -17,7 +17,6 @@ export function AuthProvider({ children }) {
             const userData = await getCurrentUser();
 
             if (userData && (userData.id || userData.id_uzytkownika)) {
-
                 const normalizedUser = {
                     id: userData.id || userData.id_uzytkownika,
                     imie: userData.imie,
@@ -28,23 +27,32 @@ export function AuthProvider({ children }) {
 
                 setUser(normalizedUser);
             } else {
-                authLogout();
+                setUser(null);
             }
         } catch (error) {
-            authLogout();
+            setUser(null);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleLogout = () => {
-        console.log('🚪 AuthContext: Wylogowywanie użytkownika');
-        authLogout();
+    const handleLogout = useCallback(async () => {
+        console.log('AuthContext: Wylogowywanie użytkownika');
+        await authLogout();
         setUser(null);
-    };
+        if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+        }
+    }, []);
 
-    const login = (userData) => {
-        console.log('🔐 AuthContext: Logowanie użytkownika:', userData);
+    const login = (userData, accessToken) => {
+        console.log('AuthContext: Logowanie użytkownika:', userData);
+
+        
+        if (accessToken) {
+            setToken(accessToken);
+        }
+
         const normalizedUser = {
             id: userData.id || userData.id_uzytkownika,
             imie: userData.imie,

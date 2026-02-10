@@ -1,7 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { loginUser } from '/lib/api/auth.api';
-import { setToken } from '/lib/auth';
 import AuthForm from '/components/AuthForm';
 import { useAuth } from '/context/AuthContext';
 import Link from 'next/link';
@@ -9,7 +8,7 @@ import { useState } from 'react';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { setUser } = useAuth();
+    const { login } = useAuth();
     const [error, setError] = useState('');
 
     const getDashboardPath = (userRole) => {
@@ -28,9 +27,9 @@ export default function LoginPage() {
             setError('');
             const res = await loginUser(values);
 
-            if (res.token) {
-                setToken(res.token);
-                setUser(res.user);
+            if (res.accessToken) {
+                
+                login(res.user, res.accessToken);
 
                 const dashboardPath = getDashboardPath(res.user.role);
                 router.push(dashboardPath);
